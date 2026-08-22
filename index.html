@@ -70,7 +70,7 @@
       <!-- Center: 4-Corner Arena & Controls -->
       <section class="arena-section">
         <div class="canvas-wrapper" id="canvas-wrapper">
-          <canvas id="battle-canvas" width="800" height="540"></canvas>
+          <canvas id="battle-canvas"></canvas>
 
           <!-- Ultimate Skill Cut-in Banner Overlay -->
           <div id="ult-cutin-overlay" class="cutin-overlay hidden">
@@ -81,17 +81,18 @@
               <div class="cutin-text-group">
                 <span class="cutin-sub" id="cutin-fighter-name">하나코 나나</span>
                 <h2 class="cutin-title" id="cutin-skill-name">사랑이 뚜루루룰루 난사!</h2>
-                <p class="cutin-desc" id="cutin-skill-desc">기관총처럼 18연발 탄환을 [뚜루루룰루~] 쏟아붓습니다!</p>
+                <p class="cutin-desc" id="cutin-skill-desc">기관총처럼 16연발 탄환을 [뚜루루룰루~] 쏟아붓습니다!</p>
               </div>
             </div>
           </div>
 
-          <!-- Winner Announcement Modal Overlay -->
+          <!-- Clean Winner Announcement with Profile Avatar -->
           <div id="winner-overlay" class="winner-overlay hidden">
             <div class="winner-card">
-              <div class="winner-trophy">🏆</div>
-              <span class="winner-label">VICTORY ROYALE!</span>
-              <h2 id="winner-name" class="winner-name">하나코 나나</h2>
+              <div class="winner-avatar-wrap">
+                <img id="winner-img" class="winner-avatar-img" src="assets/shibuki_avatar.png" alt="Winner Profile">
+              </div>
+              <h2 id="winner-name" class="winner-name">텐코 시부키 승리!</h2>
               <div class="winner-actions">
                 <button id="btn-rematch" class="btn btn-primary btn-lg">
                   <i data-lucide="rotate-ccw"></i> 다시 시작
@@ -156,14 +157,14 @@
             <div class="guide-avatar-badge" style="background:#ff69b4;">🌸</div>
             <div class="guide-info">
               <strong>하나코 나나</strong>
-              <p>일반: [사랑이] 단발 / 궁극기: [사랑이] 18연발 뚜루루룰루 난사</p>
+              <p>일반: [사랑이] 단발 / 궁극기: [사랑이] 16연발 뚜루루룰루 난사</p>
             </div>
           </div>
           <div class="guide-item">
             <div class="guide-avatar-badge" style="background:#a855f7;">🦊</div>
             <div class="guide-info">
               <strong>텐코 시부키</strong>
-              <p>일반: [뿔 똑, 똑 짤짤이] / 궁극기: [캥캥이 변신 & 초고속 할큄]</p>
+              <p>일반: [뿔 똑, 똑 짤짤이] / 궁극기: [캥캥이 변신 & 폭풍 대쉬]</p>
             </div>
           </div>
         </div>

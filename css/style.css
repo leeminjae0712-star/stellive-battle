@@ -125,7 +125,7 @@ body {
   transform: translateY(-1px);
 }
 
-/* 2. Top Minecraft-Style Health HUD (마인크래프트 하트 체력바) */
+/* 2. Top Minecraft-Style Health HUD */
 .minecraft-hud-container {
   background: #141724;
   border: 2px solid #2a2e45;
@@ -149,8 +149,8 @@ body {
 
 .mc-hearts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
 }
 
 .mc-empty-msg {
@@ -165,7 +165,7 @@ body {
   border: 1px solid var(--bg-card-border);
   border-left: 3px solid var(--char-color, #a855f7);
   border-radius: 6px;
-  padding: 6px 8px;
+  padding: 6px 10px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -180,12 +180,12 @@ body {
 .mc-item-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .mc-avatar-wrap {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   border: 2px solid;
   overflow: hidden;
@@ -193,6 +193,7 @@ body {
   align-items: center;
   justify-content: center;
   background: #111;
+  flex-shrink: 0;
 }
 
 .mc-avatar-img {
@@ -202,11 +203,11 @@ body {
 }
 
 .mc-avatar-emoji {
-  font-size: 0.75rem;
+  font-size: 0.85rem;
 }
 
 .mc-name {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 800;
   flex: 1;
   white-space: nowrap;
@@ -216,7 +217,7 @@ body {
 
 .mc-hp-num {
   font-family: var(--font-hud);
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   color: #4ade80;
 }
 
@@ -227,8 +228,8 @@ body {
 .mc-hearts-row {
   display: flex;
   align-items: center;
-  gap: 2px;
-  font-size: 0.82rem;
+  gap: 3px;
+  font-size: 0.88rem;
   line-height: 1;
 }
 
@@ -243,7 +244,7 @@ body {
 /* 3. Main Layout Grid */
 .main-layout {
   display: grid;
-  grid-template-columns: 310px 1fr 280px;
+  grid-template-columns: 290px 1fr 270px;
   gap: 12px;
   flex: 1;
 }
@@ -308,26 +309,10 @@ body {
   gap: 6px;
 }
 
-.highlight-btn {
-  border-color: rgba(255, 105, 180, 0.6) !important;
-  color: #ff69b4 !important;
-}
-
 .character-grid {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: calc(100vh - 290px);
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.character-grid::-webkit-scrollbar {
-  width: 4px;
-}
-.character-grid::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
 }
 
 .roster-card {
@@ -337,7 +322,7 @@ body {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--bg-card-border);
   border-radius: var(--radius-sm);
-  padding: 8px 10px;
+  padding: 10px;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -355,8 +340,8 @@ body {
 }
 
 .roster-avatar-box {
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 2px solid;
   overflow: hidden;
@@ -371,10 +356,6 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.roster-avatar-emoji {
-  font-size: 1.3rem;
 }
 
 .roster-info {
@@ -392,7 +373,7 @@ body {
 }
 
 .roster-name {
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   font-weight: 800;
 }
 
@@ -427,7 +408,7 @@ body {
   color: var(--char-color);
 }
 
-/* 5. Center Arena & Canvas */
+/* 5. Center Arena & 1:1 Pixel-Perfect Canvas */
 .arena-section {
   display: flex;
   flex-direction: column;
@@ -437,7 +418,9 @@ body {
 .canvas-wrapper {
   position: relative;
   width: 100%;
-  height: 540px;
+  aspect-ratio: 16 / 10;
+  min-height: 460px;
+  max-height: 550px;
   background: #0f111a;
   border: 2px solid #2a2e45;
   border-radius: var(--radius-md);
@@ -486,8 +469,8 @@ body {
 }
 
 .cutin-character-art img {
-  width: 100px;
-  height: 100px;
+  width: 90px;
+  height: 90px;
   object-fit: cover;
   border-radius: 50%;
   border: 3px solid #fff;
@@ -541,31 +524,40 @@ body {
   background: #171926;
   border: 2px solid #fbbf24;
   border-radius: var(--radius-lg);
-  padding: 30px 40px;
+  padding: 30px 45px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  box-shadow: 0 0 40px rgba(251, 191, 36, 0.3);
+  gap: 14px;
+  box-shadow: 0 0 40px rgba(251, 191, 36, 0.35);
   animation: scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.winner-trophy {
-  font-size: 3.5rem;
+.winner-avatar-wrap {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 4px solid var(--accent-gold);
+  overflow: hidden;
+  box-shadow: 0 0 25px rgba(251, 191, 36, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111;
 }
 
-.winner-label {
-  font-family: var(--font-hud);
-  font-size: 0.9rem;
-  color: #fbbf24;
-  letter-spacing: 1px;
+.winner-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .winner-name {
   font-family: var(--font-hud);
   font-size: 2.2rem;
   color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
 }
 
 /* 6. Control Panel */
@@ -669,33 +661,6 @@ input:checked + .slider {
 input:checked + .slider:before {
   transform: translateX(16px);
   background-color: #fff;
-}
-
-.select-wrapper {
-  display: flex;
-  align-items: center;
-  background: var(--bg-input);
-  border: 1px solid var(--bg-card-border);
-  border-radius: var(--radius-sm);
-  padding: 0 10px;
-  gap: 6px;
-}
-
-.select-wrapper select {
-  background: transparent;
-  border: none;
-  color: var(--text-main);
-  font-family: var(--font-main);
-  font-size: 0.82rem;
-  font-weight: 600;
-  padding: 8px 4px;
-  outline: none;
-  cursor: pointer;
-}
-
-.select-wrapper select option {
-  background: #161828;
-  color: #fff;
 }
 
 /* 7. Right Sidebar */
@@ -872,12 +837,16 @@ input:checked + .slider:before {
 
 .btn-sm {
   font-size: 0.75rem;
-  padding: 5px 10px;
+  padding: 6px 12px;
 }
 
 .btn-lg {
   font-size: 1rem;
   padding: 12px 24px;
+}
+
+.btn-block {
+  width: 100%;
 }
 
 .btn i {
@@ -904,7 +873,7 @@ input:checked + .slider:before {
 /* Responsive adjustments */
 @media (max-width: 1200px) {
   .main-layout {
-    grid-template-columns: 280px 1fr 260px;
+    grid-template-columns: 270px 1fr 250px;
   }
 }
 
@@ -913,6 +882,6 @@ input:checked + .slider:before {
     grid-template-columns: 1fr;
   }
   .canvas-wrapper {
-    height: 480px;
+    min-height: 400px;
   }
 }

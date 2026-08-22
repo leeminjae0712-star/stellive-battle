@@ -1,6 +1,7 @@
 ﻿/**
  * Main Game Controller
- * Manages simulation loop, top Minecraft HUD, Nana & Shibuki 1v1 battle, and UI events.
+ * Manages simulation loop, top Minecraft HUD, 1:1 pixel-perfect canvas resolution,
+ * and clean winner profile victory screen.
  */
 
 class GameApp {
@@ -19,11 +20,11 @@ class GameApp {
 
     // Game State
     this.allCharacterData = STELLIVE_CHARACTERS;
-    this.selectedIds = new Set(['nana', 'shibuki']); // Default both selected
+    this.selectedIds = new Set(['nana', 'shibuki']);
     this.fighters = [];
     this.isPlaying = false;
     this.isPaused = false;
-    this.speedMultiplier = 1.0; // Default 1x speed
+    this.speedMultiplier = 1.0;
     this.skillPauseEnabled = true;
     this.lastTime = 0;
     this.pauseRemainingTimer = 0;
@@ -32,6 +33,9 @@ class GameApp {
   }
 
   init() {
+    this.resizeCanvas();
+    window.addEventListener('resize', () => this.resizeCanvas());
+
     this.setupEventListeners();
     this.renderCharacterRoster();
     this.resetFighters();
@@ -40,6 +44,24 @@ class GameApp {
 
     // Start Simulation Loop
     requestAnimationFrame((t) => this.loop(t));
+  }
+
+  // 1:1 Pixel-Perfect Canvas Resolution (No Distortion or Stretching)
+  resizeCanvas() {
+    const rect = this.canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    this.canvasWidth = rect.width;
+    this.canvasHeight = rect.height;
+
+    this.canvas.width = Math.floor(rect.width * dpr);
+    this.canvas.height = Math.floor(rect.height * dpr);
+
+    this.dpr = dpr;
+    if (this.arena) {
+      this.arena.resize(this.canvasWidth, this.canvasHeight);
+    }
   }
 
   setupEventListeners() {
@@ -207,7 +229,6 @@ class GameApp {
       return;
     }
 
-    // Spawn 1v1 at left & right sides of the 4-corner arena
     const count = selectedList.length;
     selectedList.forEach((char, index) => {
       const offsetX = count === 2 ? (index === 0 ? -this.arena.halfW * 0.55 : this.arena.halfW * 0.55) : 0;
@@ -239,7 +260,6 @@ class GameApp {
       item.className = `mc-hud-item ${f.isDead ? 'dead' : ''}`;
       item.style.setProperty('--char-color', f.color);
 
-      // Mini Avatar
       let avatarHtml = '';
       if (f.avatarImg && f.avatarImg.src) {
         avatarHtml = `<img class="mc-avatar-img" src="${f.avatarImg.src}">`;
@@ -247,7 +267,6 @@ class GameApp {
         avatarHtml = `<span class="mc-avatar-emoji">${f.emoji}</span>`;
       }
 
-      // Calculate Minecraft Hearts (Total 10 hearts)
       const heartCount = 10;
       const hpPercent = Math.max(0, f.hp / f.maxHp);
       const activeHearts = Math.ceil(hpPercent * heartCount);
@@ -302,7 +321,7 @@ class GameApp {
     overlay.classList.remove('hidden');
 
     if (shouldPause) {
-      this.pauseRemainingTimer = 0.65; // Freeze action for 0.65s
+      this.pauseRemainingTimer = 0.65;
     }
 
     setTimeout(() => {
@@ -352,13 +371,24 @@ class GameApp {
     }
   }
 
+  // Clean Victory Announcement with Winner's Profile Avatar
   declareWinner(winner) {
     this.isPlaying = false;
     this.audio.playVictory();
 
     const overlay = document.getElementById('winner-overlay');
+    const imgEl = document.getElementById('winner-img');
     const nameEl = document.getElementById('winner-name');
-    nameEl.textContent = `${winner.name} 최후의 승리!`;
+
+    // Display winner profile picture
+    if (winner.avatarImg && winner.avatarImg.src) {
+      imgEl.src = winner.avatarImg.src;
+    } else if (winner.fullArtImg && winner.fullArtImg.src) {
+      imgEl.src = winner.fullArtImg.src;
+    }
+
+    // Clean text: e.g. "텐코 시부키 승리!" or "하나코 나나 승리!"
+    nameEl.textContent = `${winner.name} 승리!`;
     overlay.classList.remove('hidden');
   }
 
@@ -373,12 +403,12 @@ class GameApp {
     } else if (this.isPlaying && !this.isPaused) {
       const effSpeed = this.speedMultiplier;
 
-      // 1. Update Fighters (Movement, Gun Aim, Cooldowns, Skills)
+      // 1. Update Fighters
       for (const f of this.fighters) {
         f.update(dt, this.arena, this.fighters, this.skills, this.audio, this.particles, effSpeed, this.skillPauseEnabled);
       }
 
-      // 2. Physics (Substeps, Wall bounce, Elastic clashes, Kaengkaengi scratches)
+      // 2. Physics
       this.physics.update(dt, this.fighters, this.arena, this.audio, this.particles, effSpeed);
 
       // 3. Update Skills & Bullets
@@ -404,7 +434,8 @@ class GameApp {
   }
 
   render() {
-    this.ctx.save();
+    const dpr = this.dpr || 1;
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
 
     // Screen Shake
@@ -414,7 +445,7 @@ class GameApp {
       this.ctx.translate(sx, sy);
     }
 
-    // 1. Draw Fixed 4-Corner Arena
+    // 1. Draw 4-Corner Arena
     this.arena.render(this.ctx);
 
     // 2. Draw Active Skill Bullets & Horns
@@ -427,8 +458,6 @@ class GameApp {
 
     // 4. Draw Particles & Damage Numbers
     this.particles.render(this.ctx);
-
-    this.ctx.restore();
   }
 }
 

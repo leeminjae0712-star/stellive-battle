@@ -1,25 +1,12 @@
 ﻿/**
- * Arena & Environment Engine (Fixed 4-Corner Rectangular Arena)
- * Clean dark arena styling without distracting neon glare.
+ * Arena Engine (Dynamic 1:1 Aspect Ratio 4-Corner Box Arena)
+ * Eliminates all canvas distortion and maintains perfect geometric proportions.
  */
 
 class Arena {
-  constructor(width = 800, height = 600) {
-    this.type = 'box'; // Fixed 4-corner rectangular arena
-    this.width = width;
-    this.height = height;
-    this.cx = width / 2;
-    this.cy = height / 2;
-    
-    // Bounds: 88% of canvas width/height with margin
-    this.halfW = (width * 0.88) / 2;
-    this.halfH = (height * 0.86) / 2;
-    this.left = this.cx - this.halfW;
-    this.right = this.cx + this.halfW;
-    this.top = this.cy - this.halfH;
-    this.bottom = this.cy + this.halfH;
-
-    this.restitution = 1.0; // Perfect elastic bounce
+  constructor(width = 800, height = 540) {
+    this.resize(width, height);
+    this.restitution = 1.0;
   }
 
   resize(width, height) {
@@ -27,16 +14,14 @@ class Arena {
     this.height = height;
     this.cx = width / 2;
     this.cy = height / 2;
+
+    // 88% width, 84% height with clean margin
     this.halfW = (width * 0.88) / 2;
-    this.halfH = (height * 0.86) / 2;
+    this.halfH = (height * 0.84) / 2;
     this.left = this.cx - this.halfW;
     this.right = this.cx + this.halfW;
     this.top = this.cy - this.halfH;
     this.bottom = this.cy + this.halfH;
-  }
-
-  update(dt, fighters = [], particleSystem = null, speedMultiplier = 1) {
-    // 4-corner fixed arena is static & ultra-clean
   }
 
   isInside(x, y, radius = 0) {
@@ -51,7 +36,7 @@ class Arena {
   render(ctx) {
     ctx.save();
 
-    // 1. Sleek High-Contrast Background
+    // 1. Background
     ctx.fillStyle = '#0f111a';
     ctx.fillRect(0, 0, this.width, this.height);
 
@@ -62,7 +47,7 @@ class Arena {
     // 3. Subtle Arena Floor Grid Pattern
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
     ctx.lineWidth = 1;
-    const gridSize = 40;
+    const gridSize = 45;
     for (let x = this.left; x <= this.right; x += gridSize) {
       ctx.beginPath();
       ctx.moveTo(x, this.top);
@@ -76,7 +61,7 @@ class Arena {
       ctx.stroke();
     }
 
-    // 4. Center Ring & Division Lines (Clean & Subtle)
+    // 4. Center Ring (Perfect pure circle)
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -90,16 +75,16 @@ class Arena {
     ctx.lineTo(this.right, this.cy);
     ctx.stroke();
 
-    // 5. Clean 4-Corner Rectangular Outer Border (No excessive neon blur)
+    // 5. Clean 4-Corner Outer Border
     ctx.strokeStyle = '#3b4261';
     ctx.lineWidth = 3;
     ctx.strokeRect(this.left, this.top, this.halfW * 2, this.halfH * 2);
 
     // 6. Modern Tech Corner Accent Brackets
-    const bracketLen = 24;
+    const bracketLen = 22;
     ctx.strokeStyle = '#6366f1';
     ctx.lineWidth = 4;
-    
+
     // Top-Left
     ctx.beginPath();
     ctx.moveTo(this.left - 2, this.top + bracketLen);
