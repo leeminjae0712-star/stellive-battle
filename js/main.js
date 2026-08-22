@@ -1,77 +1,135 @@
-/**
- * Main Controller & Game Loop
- * Domain: hanakonana.cloud
+﻿/**
+ * Main Game Controller
+ * Manages simulation loop, top Minecraft HUD, fighter selection, and UI events.
  */
 
 class GameApp {
   constructor() {
-    this.canvas = document.getElementById('battleCanvas');
+    this.canvas = document.getElementById('battle-canvas');
     this.ctx = this.canvas.getContext('2d');
-    
-    // Core systems
-    this.audio = window.soundEngine;
-    this.arena = new Arena('circle');
+    this.canvasWidth = 800;
+    this.canvasHeight = 540;
+
+    // Subsystems
+    this.audio = new SoundEngine();
+    this.arena = new Arena(this.canvasWidth, this.canvasHeight);
     this.physics = new PhysicsEngine();
     this.particles = new ParticleSystem();
     this.skills = new SkillManager();
 
-    // State
-    this.allCharacters = [...STELLIVE_CHARACTERS];
-    this.selectedCharIds = new Set(['nana', 'kanna', 'yuni', 'hina', 'lize', 'mashiro']);
+    // Game State
+    this.allCharacterData = STELLIVE_CHARACTERS;
+    this.selectedIds = new Set(['nana', 'shibuki', 'riko', 'rin']); // Default 4 members selected
     this.fighters = [];
     this.isPlaying = false;
     this.isPaused = false;
-    this.speedMultiplier = 1.0;
+    this.speedMultiplier = 1.0; // Default 1x speed
+    this.skillPauseEnabled = true;
+    this.gameMode = 'royale';
     this.lastTime = 0;
-    this.gameMode = 'royale'; // royale, duel, team, endless
-
-    // Settings
-    this.enableCutin = true;
-    this.enableSlowMo = true;
-    this.enableMouseGrab = true;
-
-    // Mouse Interaction
-    this.draggedFighter = null;
-    this.dragOffset = { x: 0, y: 0 };
-    this.mouseHistory = [];
-
-    // Slow-mo effect timer
-    this.slowMoFactor = 1.0;
-    this.slowMoTimer = 0;
+    this.pauseRemainingTimer = 0;
 
     this.init();
   }
 
   init() {
-    this.resizeCanvas();
-    window.addEventListener('resize', () => this.resizeCanvas());
-
-    this.bindUI();
-    this.renderRoster('all');
-    this.updateActiveCount();
-    this.initFighters();
+    this.setupEventListeners();
+    this.renderCharacterRoster();
+    this.resetFighters();
+    this.updateMinecraftHud();
     this.updateLeaderboard();
 
-    // Start loop
+    // Start Simulation Loop
     requestAnimationFrame((t) => this.loop(t));
   }
 
-  resizeCanvas() {
-    const wrapper = document.getElementById('canvas-wrapper');
-    const rect = wrapper.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+  setupEventListeners() {
+    // 1. Start / Pause / Reset Buttons
+    const btnStart = document.getElementById('btn-start');
+    const btnStartText = document.getElementById('btn-start-text');
+    btnStart.addEventListener('click', () => {
+      if (!this.isPlaying) {
+        if (this.fighters.length < 2) {
+          alert('배틀을 시작하려면 최소 2명 이상의 파이터를 선택해 주세요!');
+          return;
+        }
+        this.isPlaying = true;
+        this.isPaused = false;
+        btnStartText.textContent = '일시 정지';
+        btnStart.classList.remove('btn-success');
+        btnStart.classList.add('btn-warning');
+        this.audio.playClick();
+      } else {
+        this.isPaused = !this.isPaused;
+        btnStartText.textContent = this.isPaused ? '계속 하기' : '일시 정지';
+        this.audio.playClick();
+      }
+    });
 
-    this.canvas.width = rect.width * dpr;
-    this.canvas.height = rect.height * dpr;
-    this.ctx.scale(dpr, dpr);
+    const btnReset = document.getElementById('btn-reset');
+    btnReset.addEventListener('click', () => {
+      this.resetFighters();
+      this.isPlaying = false;
+      this.isPaused = false;
+      btnStartText.textContent = '배틀 시작';
+      btnStart.classList.remove('btn-warning');
+      btnStart.classList.add('btn-success');
+      this.audio.playClick();
+    });
 
-    this.canvasWidth = rect.width;
-    this.canvasHeight = rect.height;
-    this.arena.resize(this.canvasWidth, this.canvasHeight);
-  }
+    // 2. Speed Preset Buttons (Default 1x)
+    const speedButtons = document.querySelectorAll('.speed-btn');
+    speedButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        speedButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.speedMultiplier = parseFloat(btn.getAttribute('data-speed')) || 1.0;
+        this.audio.playClick();
+      });
+    });
 
-  bindUI() {
-    // 1. Sound Button
+    // 3. Skill Pause Toggle
+    const toggleSkillPause = document.getElementById('toggle-skill-pause');
+    if (toggleSkillPause) {
+      toggleSkillPause.addEventListener('change', (e) => {
+        this.skillPauseEnabled = e.target.checked;
+        this.audio.playClick();
+      });
+    }
+
+    // 4. Quick Roster Selection Action Buttons
+    const btnSelectAll = document.getElementById('btn-select-all');
+    btnSelectAll.addEventListener('click', () => {
+      this.selectedIds = new Set(this.allCharacterData.map(c => c.id));
+      this.renderCharacterRoster();
+      this.resetFighters();
+      this.audio.playClick();
+    });
+
+    const btnNanaShibuki = document.getElementById('btn-nana-shibuki');
+    btnNanaShibuki.addEventListener('click', () => {
+      this.selectedIds = new Set(['nana', 'shibuki']);
+      this.renderCharacterRoster();
+      this.resetFighters();
+      this.audio.playClick();
+    });
+
+    const btnClearAll = document.getElementById('btn-clear-all');
+    btnClearAll.addEventListener('click', () => {
+      this.selectedIds.clear();
+      this.renderCharacterRoster();
+      this.resetFighters();
+      this.audio.playClick();
+    });
+
+    // 5. Game Mode Selector
+    const selectMode = document.getElementById('select-mode');
+    selectMode.addEventListener('change', (e) => {
+      this.gameMode = e.target.value;
+      this.resetFighters();
+    });
+
+    // 6. Sound Toggle
     const btnSound = document.getElementById('btn-sound');
     btnSound.addEventListener('click', () => {
       const isMuted = this.audio.toggleMute();
@@ -79,8 +137,9 @@ class GameApp {
       if (window.lucide) lucide.createIcons();
     });
 
-    // 2. Fullscreen
-    document.getElementById('btn-fullscreen').addEventListener('click', () => {
+    // 7. Fullscreen Toggle
+    const btnFullscreen = document.getElementById('btn-fullscreen');
+    btnFullscreen.addEventListener('click', () => {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
       } else {
@@ -88,204 +147,73 @@ class GameApp {
       }
     });
 
-    // 3. Match Controls
-    const btnStart = document.getElementById('btn-start');
-    const btnStartText = document.getElementById('btn-start-text');
-    btnStart.addEventListener('click', () => {
-      this.audio.init();
-      if (!this.isPlaying) {
-        this.startMatch();
-      } else {
-        this.isPaused = !this.isPaused;
-        btnStartText.textContent = this.isPaused ? '이어하기' : '일시정지';
-      }
-    });
-
-    document.getElementById('btn-reset').addEventListener('click', () => {
-      this.resetMatch();
-    });
-
-    document.getElementById('btn-restart-match').addEventListener('click', () => {
+    // 8. Rematch Button
+    const btnRematch = document.getElementById('btn-rematch');
+    btnRematch.addEventListener('click', () => {
       document.getElementById('winner-overlay').classList.add('hidden');
-      this.startMatch();
+      this.resetFighters();
+      this.isPlaying = true;
+      this.isPaused = false;
+      document.getElementById('btn-start-text').textContent = '일시 정지';
+      document.getElementById('btn-start').classList.remove('btn-success');
+      document.getElementById('btn-start').classList.add('btn-warning');
     });
 
-    // 4. Speed Buttons
-    document.querySelectorAll('.speed-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        this.speedMultiplier = parseFloat(btn.dataset.speed);
-      });
+    // 9. Cutin Event Listener
+    window.addEventListener('fighter-ult-cutin', (e) => {
+      this.showUltCutin(e.detail.fighter, e.detail.ultName, e.detail.ultDesc, e.detail.shouldPause);
     });
-
-    // 5. Selectors (Mode & Arena)
-    const selectMode = document.getElementById('select-mode');
-    selectMode.addEventListener('change', (e) => {
-      this.gameMode = e.target.value;
-      this.resetMatch();
-    });
-
-    const selectArena = document.getElementById('select-arena');
-    selectArena.addEventListener('change', (e) => {
-      this.arena.setType(e.target.value);
-    });
-
-    // 6. Roster Tabs
-    document.querySelectorAll('.tab-btn').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        this.renderRoster(tab.dataset.tab);
-      });
-    });
-
-    // 7. Roster Action Buttons
-    document.getElementById('btn-select-all').addEventListener('click', () => {
-      this.allCharacters.forEach(c => this.selectedCharIds.add(c.id));
-      this.renderRoster(document.querySelector('.tab-btn.active').dataset.tab);
-      this.updateActiveCount();
-      this.resetMatch();
-    });
-
-    document.getElementById('btn-clear-all').addEventListener('click', () => {
-      this.selectedCharIds.clear();
-      this.renderRoster(document.querySelector('.tab-btn.active').dataset.tab);
-      this.updateActiveCount();
-      this.resetMatch();
-    });
-
-    document.getElementById('btn-random-pick').addEventListener('click', () => {
-      this.selectedCharIds.clear();
-      const shuffled = [...this.allCharacters].sort(() => 0.5 - Math.random());
-      shuffled.slice(0, 4).forEach(c => this.selectedCharIds.add(c.id));
-      this.renderRoster(document.querySelector('.tab-btn.active').dataset.tab);
-      this.updateActiveCount();
-      this.resetMatch();
-    });
-
-    // 8. Tweak Sliders
-    const sliderBounce = document.getElementById('slider-bounciness');
-    sliderBounce.addEventListener('input', (e) => {
-      this.physics.setBounciness(e.target.value);
-    });
-
-    // 9. Toggles
-    document.getElementById('toggle-cutin').addEventListener('change', (e) => {
-      this.enableCutin = e.target.checked;
-    });
-    document.getElementById('toggle-slowmo').addEventListener('change', (e) => {
-      this.enableSlowMo = e.target.checked;
-    });
-    document.getElementById('toggle-mouse-grab').addEventListener('change', (e) => {
-      this.enableMouseGrab = e.target.checked;
-    });
-
-    // 10. Custom Fighter Modal
-    const modal = document.getElementById('modal-creator');
-    document.getElementById('btn-open-creator').addEventListener('click', () => {
-      modal.classList.remove('hidden');
-    });
-    document.getElementById('btn-close-modal').addEventListener('click', () => {
-      modal.classList.add('hidden');
-    });
-
-    // Custom Color picker
-    const customColorInput = document.getElementById('custom-color');
-    customColorInput.addEventListener('input', (e) => {
-      document.getElementById('color-hex-val').textContent = e.target.value;
-    });
-
-    // Save Custom Fighter
-    document.getElementById('btn-save-custom').addEventListener('click', () => {
-      this.saveCustomFighter();
-    });
-
-    // 11. Mouse Drag & Fling Handling
-    this.bindMouseDrag();
   }
 
-  saveCustomFighter() {
-    const name = document.getElementById('custom-name').value.trim() || '커스텀 파이터';
-    const color = document.getElementById('custom-color').value;
-    const skillType = document.getElementById('custom-skill').value;
-    const emoji = document.getElementById('custom-emoji').value.trim() || '⭐';
-    const fileInput = document.getElementById('custom-image-file');
-
-    const newChar = {
-      id: 'custom_' + Date.now(),
-      name,
-      group: 'gen3',
-      role: '팬 메이드 파이터',
-      title: '커스텀 제작 파이터',
-      color,
-      glowColor: color,
-      emoji,
-      hp: 1100,
-      atk: 52,
-      def: 20,
-      speed: 5.5,
-      skillType,
-      skillName: `${name}의 시그니처 공격`,
-      ultName: `${name}의 필살 궁극기!`,
-      ultDesc: '거대한 에너지 폭발을 일으킵니다.',
-      avatarUrl: null
-    };
-
-    if (fileInput.files && fileInput.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        newChar.avatarUrl = e.target.result;
-        this.addCreatedCharacter(newChar);
-      };
-      reader.readAsDataURL(fileInput.files[0]);
-    } else {
-      this.addCreatedCharacter(newChar);
-    }
-  }
-
-  addCreatedCharacter(newChar) {
-    this.allCharacters.unshift(newChar);
-    this.selectedCharIds.add(newChar.id);
-    document.getElementById('modal-creator').classList.add('hidden');
-    this.renderRoster('all');
-    this.updateActiveCount();
-    this.resetMatch();
-  }
-
-  renderRoster(filterGroup = 'all') {
-    const grid = document.getElementById('roster-grid');
+  renderCharacterRoster() {
+    const grid = document.getElementById('character-grid');
     grid.innerHTML = '';
 
-    const filtered = filterGroup === 'all' 
-      ? this.allCharacters 
-      : this.allCharacters.filter(c => c.group === filterGroup);
+    const countBadge = document.getElementById('selected-count-badge');
+    if (countBadge) {
+      countBadge.textContent = `선택: ${this.selectedIds.size}명`;
+    }
 
-    filtered.forEach(char => {
+    this.allCharacterData.forEach(char => {
+      const isSelected = this.selectedIds.has(char.id);
       const card = document.createElement('div');
-      card.className = `fighter-card ${this.selectedCharIds.has(char.id) ? 'active' : ''}`;
+      card.className = `roster-card ${isSelected ? 'selected' : ''}`;
       card.style.setProperty('--char-color', char.color);
 
+      // Card Avatar HTML
+      let avatarHtml = '';
+      if (char.avatarUrl) {
+        avatarHtml = `<img class="roster-avatar-img" src="${char.avatarUrl}" alt="${char.name}">`;
+      } else {
+        avatarHtml = `<div class="roster-avatar-emoji">${char.emoji}</div>`;
+      }
+
       card.innerHTML = `
-        <div class="avatar-badge">
-          ${char.avatarUrl ? `<img src="${char.avatarUrl}">` : char.emoji}
+        <div class="roster-avatar-box" style="border-color: ${char.color};">
+          ${avatarHtml}
         </div>
-        <div class="char-info">
-          <span class="char-name">${char.name}</span>
-          <span class="char-role">${char.role}</span>
+        <div class="roster-info">
+          <div class="roster-title-row">
+            <span class="roster-name">${char.name}</span>
+            <span class="roster-group-tag">${char.groupName}</span>
+          </div>
+          <span class="roster-role">${char.role}</span>
+          <span class="roster-skill-tag">스킬: ${char.skill1Name}</span>
         </div>
-        <div class="status-check"><i data-lucide="check-circle-2"></i></div>
+        <div class="roster-check-box">
+          <i data-lucide="${isSelected ? 'check-circle' : 'circle'}"></i>
+        </div>
       `;
 
       card.addEventListener('click', () => {
-        if (this.selectedCharIds.has(char.id)) {
-          this.selectedCharIds.delete(char.id);
+        if (this.selectedIds.has(char.id)) {
+          this.selectedIds.delete(char.id);
         } else {
-          this.selectedCharIds.add(char.id);
+          this.selectedIds.add(char.id);
         }
-        card.classList.toggle('active', this.selectedCharIds.has(char.id));
-        this.updateActiveCount();
-        this.resetMatch();
+        this.renderCharacterRoster();
+        this.resetFighters();
+        this.audio.playClick();
       });
 
       grid.appendChild(card);
@@ -294,183 +222,158 @@ class GameApp {
     if (window.lucide) lucide.createIcons();
   }
 
-  updateActiveCount() {
-    const countEl = document.getElementById('active-count');
-    countEl.textContent = `${this.selectedCharIds.size}/${this.allCharacters.length} 참전 중`;
-  }
-
-  initFighters() {
+  resetFighters() {
     this.fighters = [];
-    const selected = this.allCharacters.filter(c => this.selectedCharIds.has(c.id));
-    if (selected.length === 0) return;
-
-    const count = selected.length;
-    const radius = this.arena.baseRadius * 0.65;
-
-    selected.forEach((config, idx) => {
-      const angle = (idx * Math.PI * 2) / count;
-      const x = this.arena.cx + Math.cos(angle) * radius;
-      const y = this.arena.cy + Math.sin(angle) * radius;
-
-      // Initial velocity launched towards center or tangent
-      const launchAngle = angle + Math.PI + (Math.random() - 0.5) * 0.8;
-      const speed = config.speed || 5.0;
-      const vx = Math.cos(launchAngle) * speed;
-      const vy = Math.sin(launchAngle) * speed;
-
-      const fighter = new Fighter(config, x, y, vx, vy);
-      
-      // Team assignment if team mode
-      if (this.gameMode === 'team') {
-        fighter.team = idx % 2 === 0 ? 'Team A (블루)' : 'Team B (레드)';
-        if (fighter.team === 'Team A (블루)') {
-          fighter.color = '#38bdf8';
-        } else {
-          fighter.color = '#f43f5e';
-        }
-      }
-
-      this.fighters.push(fighter);
-    });
-  }
-
-  startMatch() {
-    this.isPlaying = true;
-    this.isPaused = false;
-    document.getElementById('btn-start-text').textContent = '일시정지';
-    document.getElementById('winner-overlay').classList.add('hidden');
-    document.getElementById('hud-killfeed').innerHTML = '';
-
-    if (this.fighters.length === 0 || this.fighters.every(f => f.isDead)) {
-      this.initFighters();
-    }
-
-    if (this.gameMode === 'royale') {
-      this.arena.startStorm();
-      document.getElementById('storm-warning').classList.remove('hidden');
-      setTimeout(() => {
-        document.getElementById('storm-warning').classList.add('hidden');
-      }, 3000);
-    }
-  }
-
-  resetMatch() {
-    this.isPlaying = false;
-    this.isPaused = false;
-    document.getElementById('btn-start-text').textContent = '배틀 시작';
-    document.getElementById('winner-overlay').classList.add('hidden');
-    document.getElementById('storm-warning').classList.add('hidden');
-    document.getElementById('hud-killfeed').innerHTML = '';
-    
-    this.arena.resetStorm();
     this.particles.reset();
     this.skills.reset();
-    this.initFighters();
+    document.getElementById('winner-overlay').classList.add('hidden');
+    document.getElementById('ult-cutin-overlay').classList.add('hidden');
+
+    const selectedList = this.allCharacterData.filter(c => this.selectedIds.has(c.id));
+    if (selectedList.length === 0) {
+      this.updateMinecraftHud();
+      this.updateLeaderboard();
+      return;
+    }
+
+    // Spawn fighters positioned in a neat circle within the 4-corner arena
+    const count = selectedList.length;
+    const spawnRadius = Math.min(this.arena.halfW, this.arena.halfH) * 0.65;
+
+    selectedList.forEach((char, index) => {
+      const angle = (index * Math.PI * 2) / count - Math.PI / 2;
+      const x = this.arena.cx + Math.cos(angle) * spawnRadius;
+      const y = this.arena.cy + Math.sin(angle) * spawnRadius;
+
+      let team = null;
+      if (this.gameMode === 'team') {
+        team = char.group === 'gen3' ? 'Team 3기 (Cliché)' : 'Team 연합 (1·2기)';
+      }
+
+      const fighter = new Fighter(char, x, y, team);
+      this.fighters.push(fighter);
+    });
+
+    this.updateMinecraftHud();
     this.updateLeaderboard();
   }
 
-  bindMouseDrag() {
-    const getPos = (e) => {
-      const rect = this.canvas.getBoundingClientRect();
-      return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      };
-    };
+  // Top Minecraft-Style Health HUD (마인크래프트 하트 체력바)
+  updateMinecraftHud() {
+    const container = document.getElementById('mc-hearts-grid');
+    if (!container) return;
 
-    this.canvas.addEventListener('mousedown', (e) => {
-      if (!this.enableMouseGrab) return;
-      const pos = getPos(e);
+    if (this.fighters.length === 0) {
+      container.innerHTML = `<div class="mc-empty-msg">좌측에서 파이터를 선택해 주세요!</div>`;
+      return;
+    }
 
-      for (const f of this.fighters) {
-        if (f.isDead) continue;
-        const dist = Math.hypot(f.x - pos.x, f.y - pos.y);
-        if (dist <= f.radius * 1.5) {
-          this.draggedFighter = f;
-          this.dragOffset = { x: f.x - pos.x, y: f.y - pos.y };
-          this.mouseHistory = [{ x: pos.x, y: pos.y, time: performance.now() }];
-          break;
+    container.innerHTML = '';
+
+    this.fighters.forEach(f => {
+      const item = document.createElement('div');
+      item.className = `mc-hud-item ${f.isDead ? 'dead' : ''}`;
+      item.style.setProperty('--char-color', f.color);
+
+      // Mini Avatar
+      let avatarHtml = '';
+      if (f.avatarImg && f.avatarImg.src) {
+        avatarHtml = `<img class="mc-avatar-img" src="${f.avatarImg.src}">`;
+      } else {
+        avatarHtml = `<span class="mc-avatar-emoji">${f.emoji}</span>`;
+      }
+
+      // Calculate Minecraft Hearts (Total 10 hearts)
+      const heartCount = 10;
+      const hpPercent = Math.max(0, f.hp / f.maxHp);
+      const activeHearts = Math.ceil(hpPercent * heartCount);
+
+      let heartsString = '';
+      for (let i = 0; i < heartCount; i++) {
+        if (i < activeHearts) {
+          heartsString += `<span class="mc-heart full">❤️</span>`;
+        } else {
+          heartsString += `<span class="mc-heart empty">🖤</span>`;
         }
       }
-    });
 
-    window.addEventListener('mousemove', (e) => {
-      if (!this.draggedFighter) return;
-      const pos = getPos(e);
-      this.draggedFighter.x = pos.x + this.dragOffset.x;
-      this.draggedFighter.y = pos.y + this.dragOffset.y;
-      this.mouseHistory.push({ x: pos.x, y: pos.y, time: performance.now() });
-      if (this.mouseHistory.length > 5) this.mouseHistory.shift();
-    });
+      item.innerHTML = `
+        <div class="mc-item-header">
+          <div class="mc-avatar-wrap" style="border-color: ${f.color};">
+            ${avatarHtml}
+          </div>
+          <span class="mc-name">${f.name}</span>
+          <span class="mc-hp-num">${f.isDead ? '💀 K.O.' : `${f.hp} / ${f.maxHp}`}</span>
+        </div>
+        <div class="mc-hearts-row">
+          ${heartsString}
+        </div>
+      `;
 
-    window.addEventListener('mouseup', () => {
-      if (!this.draggedFighter) return;
-
-      if (this.mouseHistory.length >= 2) {
-        const first = this.mouseHistory[0];
-        const last = this.mouseHistory[this.mouseHistory.length - 1];
-        const dt = Math.max(16, last.time - first.time) / 1000;
-        this.draggedFighter.vx = ((last.x - first.x) / dt) * 0.02;
-        this.draggedFighter.vy = ((last.y - first.y) / dt) * 0.02;
-      }
-
-      this.draggedFighter = null;
-      this.mouseHistory = [];
+      container.appendChild(item);
     });
   }
 
-  showUltCutin(fighter) {
-    if (!this.enableCutin) return;
+  showUltCutin(fighter, skillName, skillDesc, shouldPause = true) {
+    const overlay = document.getElementById('ult-cutin-overlay');
+    const imgEl = document.getElementById('cutin-img');
+    const nameEl = document.getElementById('cutin-fighter-name');
+    const skillEl = document.getElementById('cutin-skill-name');
+    const descEl = document.getElementById('cutin-skill-desc');
 
-    const overlay = document.getElementById('ult-cutin');
-    const cutinChar = document.getElementById('cutin-character');
-    const avatarEl = document.getElementById('cutin-avatar');
-    const nameEl = document.getElementById('cutin-name');
-    const skillEl = document.getElementById('cutin-skill');
-
-    overlay.style.setProperty('--ult-color', fighter.glowColor);
     nameEl.textContent = fighter.name;
-    skillEl.textContent = fighter.ultName;
-    avatarEl.innerHTML = fighter.avatarUrl ? `<img src="${fighter.avatarUrl}">` : fighter.emoji;
+    skillEl.textContent = skillName;
+    descEl.textContent = skillDesc;
+
+    if (fighter.fullArtImg && fighter.fullArtImg.src) {
+      imgEl.src = fighter.fullArtImg.src;
+      imgEl.style.display = 'block';
+    } else if (fighter.avatarImg && fighter.avatarImg.src) {
+      imgEl.src = fighter.avatarImg.src;
+      imgEl.style.display = 'block';
+    } else {
+      imgEl.style.display = 'none';
+    }
 
     overlay.classList.remove('hidden');
 
-    // Trigger slow-mo
-    if (this.enableSlowMo) {
-      this.slowMoFactor = 0.25;
-      this.slowMoTimer = 0.6;
+    if (shouldPause) {
+      this.pauseRemainingTimer = 0.75; // Freeze action for 0.75s
     }
 
     setTimeout(() => {
       overlay.classList.add('hidden');
-    }, 900);
+    }, 1100);
   }
 
-  addKillFeed(killer, victim) {
-    const feed = document.getElementById('hud-killfeed');
-    const item = document.createElement('div');
-    item.className = 'killfeed-item';
-    if (killer) {
-      item.style.setProperty('--killer-color', killer.glowColor);
-      item.innerHTML = `
-        <span class="killer">${killer.name}</span>
-        <span class="icon">⚔️</span>
-        <span class="victim">${victim.name}</span>
-      `;
-    } else {
-      item.innerHTML = `
-        <span class="victim">${victim.name}</span>
-        <span class="icon">💀</span>
-        <span class="victim">탈락</span>
-      `;
-    }
+  updateLeaderboard() {
+    const list = document.getElementById('leaderboard-list');
+    if (!list) return;
+    list.innerHTML = '';
 
-    feed.appendChild(item);
-    setTimeout(() => {
-      item.remove();
-    }, 4500);
+    const sorted = [...this.fighters].sort((a, b) => {
+      if (a.isDead !== b.isDead) return a.isDead ? 1 : -1;
+      return b.hp - a.hp;
+    });
 
-    this.audio.playKill();
+    sorted.forEach((f, idx) => {
+      const item = document.createElement('div');
+      item.className = `leader-item ${f.isDead ? 'dead' : ''}`;
+      item.style.setProperty('--char-color', f.color);
+
+      const hpPercent = Math.max(0, (f.hp / f.maxHp) * 100);
+
+      item.innerHTML = `
+        <span class="leader-rank">#${idx + 1}</span>
+        <span class="leader-emoji">${f.emoji}</span>
+        <span class="leader-name">${f.name}</span>
+        <div class="leader-hp-bar">
+          <div class="leader-hp-fill" style="width: ${hpPercent}%; background: ${f.color};"></div>
+        </div>
+        <span class="leader-hp-val">${f.isDead ? 'K.O.' : `${f.hp} HP`}</span>
+      `;
+      list.appendChild(item);
+    });
   }
 
   checkGameEnd() {
@@ -485,124 +388,62 @@ class GameApp {
         this.isPlaying = false;
       }
     } else if (this.gameMode === 'team') {
-      const teamAAlive = alive.filter(f => f.team === 'Team A (블루)');
-      const teamBAlive = alive.filter(f => f.team === 'Team B (레드)');
-      if (teamAAlive.length === 0 && teamBAlive.length > 0) {
-        this.declareWinner(teamBAlive[0], 'Team B (레드) 승리!');
-      } else if (teamBAlive.length === 0 && teamAAlive.length > 0) {
-        this.declareWinner(teamAAlive[0], 'Team A (블루) 승리!');
+      const team3Alive = alive.filter(f => f.team === 'Team 3기 (Cliché)');
+      const teamOtherAlive = alive.filter(f => f.team === 'Team 연합 (1·2기)');
+      if (team3Alive.length === 0 && teamOtherAlive.length > 0) {
+        this.declareWinner(teamOtherAlive[0], 'Team 연합 (1·2기) 승리!');
+      } else if (teamOtherAlive.length === 0 && team3Alive.length > 0) {
+        this.declareWinner(team3Alive[0], 'Team 3기 (Cliché) 승리!');
       }
     }
   }
 
-  declareWinner(winner, titleText = null) {
+  declareWinner(winner, customTitle = null) {
     this.isPlaying = false;
     this.audio.playVictory();
 
     const overlay = document.getElementById('winner-overlay');
     const nameEl = document.getElementById('winner-name');
-    const avatarEl = document.getElementById('winner-avatar');
-    const killsEl = document.getElementById('winner-kills');
-    const damageEl = document.getElementById('winner-damage');
-    const bouncesEl = document.getElementById('winner-bounces');
-
-    nameEl.textContent = titleText || `${winner.name} 우승!`;
-    avatarEl.innerHTML = winner.avatarUrl ? `<img src="${winner.avatarUrl}">` : winner.emoji;
-    killsEl.textContent = winner.kills;
-    damageEl.textContent = winner.damageDealt;
-    bouncesEl.textContent = winner.bounces;
-
+    nameEl.textContent = customTitle || `${winner.name} 최후의 승리!`;
     overlay.classList.remove('hidden');
-  }
-
-  updateLeaderboard() {
-    const list = document.getElementById('leaderboard-list');
-    list.innerHTML = '';
-
-    const sorted = [...this.fighters].sort((a, b) => {
-      if (a.isDead !== b.isDead) return a.isDead ? 1 : -1;
-      return b.kills - a.kills || b.hp - a.hp;
-    });
-
-    sorted.forEach((f, idx) => {
-      const item = document.createElement('div');
-      item.className = `leader-item ${f.isDead ? 'dead' : ''}`;
-      item.style.setProperty('--char-color', f.color);
-
-      const hpPercent = Math.max(0, (f.hp / f.maxHp) * 100);
-
-      item.innerHTML = `
-        <span class="leader-rank">#${idx + 1}</span>
-        <div class="leader-avatar">${f.emoji}</div>
-        <span class="leader-name">${f.name}</span>
-        <div class="leader-hp-bar">
-          <div class="leader-hp-fill" style="width: ${hpPercent}%"></div>
-        </div>
-        <span class="leader-kills">⚔️ ${f.kills}</span>
-      `;
-      list.appendChild(item);
-    });
   }
 
   loop(currentTime) {
     if (!this.lastTime) this.lastTime = currentTime;
-    const dt = Math.min(0.1, (currentTime - this.lastTime) / 1000);
+    const dt = Math.min(0.06, (currentTime - this.lastTime) / 1000);
     this.lastTime = currentTime;
 
-    // Handle Slow-Mo
-    if (this.slowMoTimer > 0) {
-      this.slowMoTimer -= dt;
-      if (this.slowMoTimer <= 0) this.slowMoFactor = 1.0;
-    }
+    // Handle Skill Freeze Pause
+    if (this.pauseRemainingTimer > 0) {
+      this.pauseRemainingTimer -= dt;
+    } else if (this.isPlaying && !this.isPaused) {
+      const effSpeed = this.speedMultiplier;
 
-    const effectiveSpeed = this.speedMultiplier * this.slowMoFactor;
-
-    if (this.isPlaying && !this.isPaused) {
-      // 1. Physics update
-      this.physics.update(dt, this.fighters, this.arena, this.audio, this.particles, effectiveSpeed);
-
-      // 2. Skill cast triggers & Ultimates
+      // 1. Update Fighters (Movement, Cooldowns, Skills)
       for (const f of this.fighters) {
-        if (f.isDead) continue;
-
-        // Check Ult
-        if (f.canCastUlt()) {
-          this.showUltCutin(f);
-          f.triggerUlt(this.fighters, this.skills, this.audio, this.particles, this.arena);
-        } else {
-          // Regular Skill
-          f.tryCastSkill(this.fighters, this.skills, this.audio, this.particles);
-        }
-
-        // Check if dead by recent damage
-        if (f.isDead && !f.hasLoggedDeath) {
-          f.hasLoggedDeath = true;
-          this.addKillFeed(null, f);
-          this.particles.spawnShockwave(f.x, f.y, '#ef4444', 80, 5);
-          this.particles.spawnSparks(f.x, f.y, '#ef4444', 20, 7);
-          this.particles.shake(8);
-        }
+        f.update(dt, this.arena, this.fighters, this.skills, this.audio, this.particles, effSpeed, this.skillPauseEnabled);
       }
 
-      // 3. Update Skills & Projectiles
-      this.skills.update(dt, this.arena, this.fighters, this.particles, this.audio, effectiveSpeed);
+      // 2. Physics Resolution (Substeps, Wall bounce, Elastic clashes, Kaengkaengi scratches)
+      this.physics.update(dt, this.fighters, this.arena, this.audio, this.particles, effSpeed);
 
-      // 4. Update Arena Hazards
-      this.arena.update(dt, this.fighters, this.particles, effectiveSpeed);
+      // 3. Update Skills & Lasers & Projectiles
+      this.skills.update(dt, this.arena, this.fighters, this.particles, this.audio, effSpeed);
 
-      // 5. Update Leaderboard periodically
-      if (Math.random() < 0.15) {
+      // 4. Update Minecraft HUD & Leaderboard
+      this.updateMinecraftHud();
+      if (Math.random() < 0.1) {
         this.updateLeaderboard();
       }
 
-      // 6. Check Win Condition
+      // 5. Check Win Condition
       this.checkGameEnd();
     }
 
     // Update Particles
-    this.particles.update(dt, effectiveSpeed);
+    this.particles.update(dt, this.speedMultiplier);
 
-    // Render Everything
+    // Render Canvas
     this.render();
 
     requestAnimationFrame((t) => this.loop(t));
@@ -612,17 +453,17 @@ class GameApp {
     this.ctx.save();
     this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
 
-    // Apply Screen Shake
+    // Screen Shake
     if (this.particles.screenShake > 0) {
-      const shakeX = (Math.random() - 0.5) * this.particles.screenShake;
-      const shakeY = (Math.random() - 0.5) * this.particles.screenShake;
-      this.ctx.translate(shakeX, shakeY);
+      const sx = (Math.random() - 0.5) * this.particles.screenShake;
+      const sy = (Math.random() - 0.5) * this.particles.screenShake;
+      this.ctx.translate(sx, sy);
     }
 
-    // 1. Draw Arena
+    // 1. Draw Fixed 4-Corner Arena
     this.arena.render(this.ctx);
 
-    // 2. Draw Active Skill Zones & Lasers
+    // 2. Draw Active Skill Lasers & Projectiles
     this.skills.render(this.ctx);
 
     // 3. Draw Fighters
@@ -630,14 +471,14 @@ class GameApp {
       f.render(this.ctx);
     }
 
-    // 4. Draw Particles & Damage Text
+    // 4. Draw Particles & Damage Numbers
     this.particles.render(this.ctx);
 
     this.ctx.restore();
   }
 }
 
-// Instantiate on load
+// Start Game on load
 window.addEventListener('DOMContentLoaded', () => {
   window.gameApp = new GameApp();
 });

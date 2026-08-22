@@ -1,373 +1,449 @@
-/**
+﻿/**
  * Fighter Entity Class
- * Manages movement, collision response, health/energy, skills, and canvas rendering
+ * Manages stats, physics movement, cooldown-based skills, transformations, and rendering.
  */
 
 class Fighter {
-  constructor(config, x, y, vx, vy) {
-    this.id = config.id + '_' + Math.random().toString(36).substr(2, 6);
-    this.charId = config.id;
+  constructor(config, x, y, team = null) {
+    this.id = config.id;
     this.name = config.name;
-    this.role = config.role;
+    this.romanName = config.romanName || config.id;
+    this.group = config.group || 'gen3';
+    this.groupName = config.groupName || 'StelLive';
+    this.role = config.role || 'Fighter';
+    this.title = config.title || '';
     this.color = config.color || '#a855f7';
-    this.glowColor = config.glowColor || '#9333ea';
+    this.glowColor = config.glowColor || this.color;
     this.emoji = config.emoji || '⭐';
-    this.avatarUrl = config.avatarUrl;
-    
-    // Physics
+
+    // Position & Physics
     this.x = x;
     this.y = y;
-    this.vx = vx;
-    this.vy = vy;
-    this.radius = 24;
+    this.baseRadius = 24;
+    this.radius = this.baseRadius;
     this.mass = 1.0;
-    this.baseSpeed = config.speed || 5.0;
+
+    // Movement (Subdued & readable base speed)
+    this.baseSpeed = config.speed || 3.8;
+    const initialAngle = Math.random() * Math.PI * 2;
+    this.vx = Math.cos(initialAngle) * this.baseSpeed;
+    this.vy = Math.sin(initialAngle) * this.baseSpeed;
 
     // Combat Stats
     this.maxHp = config.hp || 1000;
     this.hp = this.maxHp;
     this.atk = config.atk || 50;
     this.def = config.def || 18;
-    this.sp = 20; // 0 to 100
-    this.maxSp = 100;
+    this.team = team;
     this.isDead = false;
 
-    // Skill Config
-    this.skillType = config.skillType || 'spore';
-    this.skillName = config.skillName || '기본 스킬';
+    // Cooldown-based Skill System
+    this.skillType = config.skillType || 'normal';
+    this.skill1Name = config.skill1Name || '스킬 1';
+    this.skill1Desc = config.skill1Desc || '';
+    this.skill1MaxCd = config.skill1Cooldown || 6.5;
+    this.skill1Timer = Math.random() * 2.0; // Stagger initial cast slightly
+
     this.ultName = config.ultName || '궁극기';
     this.ultDesc = config.ultDesc || '';
-    this.skillCooldown = 3.0;
-    this.skillTimer = Math.random() * 2.0;
+    this.ultMaxCd = config.ultCooldown || 16.0;
+    this.ultTimer = Math.random() * 4.0;
 
-    // Stats Tracking
-    this.kills = 0;
-    this.damageDealt = 0;
-    this.bounces = 0;
-    this.team = null; // for team mode
+    // Transformation States (Shibuki Kaengkaengi Fox Form)
+    this.isFoxTransformed = false;
+    this.foxTransformTimer = 0;
+    this.foxMaxDuration = 6.0;
+    this.scratchCooldown = 0;
 
     // Status Effects
-    this.slowFactor = 1.0;
-    this.slowTimer = 0;
     this.isFrozen = false;
-    this.frozenTimer = 0;
+    this.freezeTimer = 0;
+    this.slowMultiplier = 1.0;
+    this.slowTimer = 0;
     this.invulnerableTimer = 0;
-    this.ultAnimationTimer = 0;
 
-    // Avatar image loader
+    // Images
     this.avatarImg = null;
-    this.loadAvatar();
-  }
-
-  loadAvatar() {
-    if (this.avatarUrl) {
-      const img = new Image();
-      img.src = this.avatarUrl;
-      img.onload = () => { this.avatarImg = img; };
+    if (config.avatarUrl) {
+      this.avatarImg = new Image();
+      this.avatarImg.src = config.avatarUrl;
     }
+
+    this.fullArtImg = null;
+    if (config.fullArtUrl) {
+      this.fullArtImg = new Image();
+      this.fullArtImg.src = config.fullArtUrl;
+    }
+
+    this.foxImg = null;
+    if (config.foxImg) {
+      this.foxImg = new Image();
+      this.foxImg.src = config.foxImg;
+    }
+
+    this.hornImg = null;
+    if (config.hornImg) {
+      this.hornImg = new Image();
+      this.hornImg.src = config.hornImg;
+    }
+
+    this.projectileImg = null;
+    if (config.projectileImg) {
+      this.projectileImg = new Image();
+      this.projectileImg.src = config.projectileImg;
+    }
+
+    // Secondary horn delayed queue for Shibuki "똑, 똑"
+    this.pendingHorns = [];
   }
 
-  update(dt, speedMultiplier = 1) {
+  update(dt, arena, allFighters, skillManager, soundEngine, particleSystem, speedMultiplier = 1, skillPauseEnabled = true) {
     if (this.isDead) return;
 
-    // Handle status timers
+    const effDt = dt * speedMultiplier;
+
+    // 1. Update Status Timers
+    if (this.invulnerableTimer > 0) this.invulnerableTimer -= effDt;
+
+    if (this.isFrozen) {
+      this.freezeTimer -= effDt;
+      if (this.freezeTimer <= 0) {
+        this.isFrozen = false;
+      } else {
+        return; // No movement or skills while frozen
+      }
+    }
+
     if (this.slowTimer > 0) {
-      this.slowTimer -= dt * speedMultiplier;
-      if (this.slowTimer <= 0) this.slowFactor = 1.0;
+      this.slowTimer -= effDt;
+      if (this.slowTimer <= 0) this.slowMultiplier = 1.0;
     }
 
-    if (this.frozenTimer > 0) {
-      this.frozenTimer -= dt * speedMultiplier;
-      if (this.frozenTimer <= 0) this.isFrozen = false;
-    }
+    // 2. Update Fox Transformation State
+    if (this.isFoxTransformed) {
+      this.foxTransformTimer -= effDt;
+      this.scratchCooldown = Math.max(0, this.scratchCooldown - effDt);
 
-    if (this.invulnerableTimer > 0) {
-      this.invulnerableTimer -= dt * speedMultiplier;
-    }
-
-    if (this.ultAnimationTimer > 0) {
-      this.ultAnimationTimer -= dt * speedMultiplier;
-    }
-
-    // Movement
-    if (!this.isFrozen) {
-      const currentSpeed = Math.hypot(this.vx, this.vy);
-      const targetSpeed = this.baseSpeed * this.slowFactor;
-
-      // Gentle speed normalization so it stays dynamic
-      if (currentSpeed > 0) {
-        const factor = (targetSpeed / currentSpeed) * 0.05 + 0.95;
-        this.vx *= factor;
-        this.vy *= factor;
+      // Fox speed & size boost
+      this.radius = this.baseRadius * 1.35;
+      
+      // Spawn fox trail particle
+      if (particleSystem && Math.random() < 0.35) {
+        particleSystem.spawnSparks(this.x + (Math.random() - 0.5) * 20, this.y + (Math.random() - 0.5) * 20, '#c084fc', 2);
       }
 
-      this.x += this.vx * speedMultiplier;
-      this.y += this.vy * speedMultiplier;
+      if (this.foxTransformTimer <= 0) {
+        // End transformation
+        this.isFoxTransformed = false;
+        this.radius = this.baseRadius;
+        if (particleSystem) {
+          particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 60, 4);
+          particleSystem.spawnDamageText(this.x, this.y, '변신 해제!', 'buff', '#e2e8f0');
+        }
+      }
+    } else {
+      this.radius = this.baseRadius;
     }
 
-    // Passive skill timer
-    this.skillTimer += dt * speedMultiplier;
-  }
-
-  onWallBounce(soundEngine, particleSystem, bounciness = 1.05) {
-    this.bounces++;
-    this.addSP(8); // Gain SP on wall bounce
-
-    // Bounciness impulse
-    this.vx *= bounciness;
-    this.vy *= bounciness;
-
-    // Cap max velocity
-    const speed = Math.hypot(this.vx, this.vy);
-    const maxSpeed = this.baseSpeed * 2.2;
-    if (speed > maxSpeed) {
-      this.vx = (this.vx / speed) * maxSpeed;
-      this.vy = (this.vy / speed) * maxSpeed;
+    // 3. Process Pending Delayed Horn Shots ("똑, 똑")
+    if (this.pendingHorns.length > 0) {
+      for (let i = this.pendingHorns.length - 1; i >= 0; i--) {
+        const item = this.pendingHorns[i];
+        item.delay -= effDt;
+        if (item.delay <= 0) {
+          const target = this.findNearestEnemy(allFighters);
+          if (target && skillManager) {
+            skillManager.spawnShibukiHorn(this, target, this.hornImg, particleSystem, 2);
+          }
+          this.pendingHorns.splice(i, 1);
+        }
+      }
     }
 
-    if (particleSystem) {
-      particleSystem.spawnSparks(this.x, this.y, this.glowColor, 5, 3);
-    }
-    if (soundEngine) {
-      soundEngine.playBounce(speed / this.baseSpeed);
-    }
-  }
+    // 4. Update Skill Cooldowns
+    this.skill1Timer += effDt;
+    this.ultTimer += effDt;
 
-  addSP(amount) {
-    if (this.isDead) return;
-    this.sp = Math.min(this.maxSp, this.sp + amount);
-  }
-
-  takeDamage(amount, attacker = null, particleSystem = null, type = 'normal') {
-    if (this.isDead || this.invulnerableTimer > 0) return;
-
-    // Damage mitigation
-    const finalDamage = Math.max(5, Math.floor(amount * (100 / (100 + this.def))));
-    this.hp -= finalDamage;
-
-    if (attacker && attacker !== this) {
-      attacker.damageDealt += finalDamage;
-      attacker.addSP(12); // Attacker gains SP
+    // Check Auto-Cast for Skill 1
+    if (this.skill1Timer >= this.skill1MaxCd) {
+      const enemy = this.findNearestEnemy(allFighters);
+      if (enemy) {
+        this.triggerSkill1(enemy, skillManager, soundEngine, particleSystem);
+        this.skill1Timer = 0;
+      }
     }
 
-    // Floating text
-    if (particleSystem) {
-      particleSystem.spawnDamageText(this.x, this.y, finalDamage, type, this.color);
+    // Check Auto-Cast for Ultimate Skill
+    if (this.ultTimer >= this.ultMaxCd) {
+      const enemy = this.findNearestEnemy(allFighters);
+      if (enemy) {
+        this.triggerUltimate(allFighters, skillManager, soundEngine, particleSystem, arena, skillPauseEnabled);
+        this.ultTimer = 0;
+      }
     }
 
-    if (this.hp <= 0) {
-      this.hp = 0;
-      this.isDead = true;
-      if (attacker && attacker !== this) {
-        attacker.kills++;
+    // 5. Update Movement Physics
+    const speedLimit = (this.isFoxTransformed ? this.baseSpeed * 1.55 : this.baseSpeed) * this.slowMultiplier;
+    const currentSpeed = Math.hypot(this.vx, this.vy);
+
+    if (currentSpeed < 0.05) {
+      const a = Math.random() * Math.PI * 2;
+      this.vx = Math.cos(a) * speedLimit;
+      this.vy = Math.sin(a) * speedLimit;
+    } else {
+      // Gently normalize toward target speed so physics remains stable & predictable
+      const factor = (speedLimit / currentSpeed) * 0.15;
+      this.vx += (this.vx / currentSpeed) * speedLimit * factor - this.vx * factor;
+      this.vy += (this.vy / currentSpeed) * speedLimit * factor - this.vy * factor;
+    }
+
+    this.x += this.vx * (speedMultiplier * 0.95);
+    this.y += this.vy * (speedMultiplier * 0.95);
+
+    // 6. 4-Corner Arena Wall Bounce
+    if (arena) {
+      if (this.x - this.radius <= arena.left) {
+        this.x = arena.left + this.radius;
+        this.vx = Math.abs(this.vx);
+        if (particleSystem) particleSystem.spawnSparks(this.x, this.y, this.color, 3);
+      } else if (this.x + this.radius >= arena.right) {
+        this.x = arena.right - this.radius;
+        this.vx = -Math.abs(this.vx);
+        if (particleSystem) particleSystem.spawnSparks(this.x, this.y, this.color, 3);
+      }
+
+      if (this.y - this.radius <= arena.top) {
+        this.y = arena.top + this.radius;
+        this.vy = Math.abs(this.vy);
+        if (particleSystem) particleSystem.spawnSparks(this.x, this.y, this.color, 3);
+      } else if (this.y + this.radius >= arena.bottom) {
+        this.y = arena.bottom - this.radius;
+        this.vy = -Math.abs(this.vy);
+        if (particleSystem) particleSystem.spawnSparks(this.x, this.y, this.color, 3);
       }
     }
   }
 
-  heal(amount, particleSystem = null) {
-    if (this.isDead) return;
-    this.hp = Math.min(this.maxHp, this.hp + amount);
+  // Skill 1 (Normal Skill)
+  triggerSkill1(enemy, skillManager, soundEngine, particleSystem) {
+    if (!skillManager || !enemy) return;
+
     if (particleSystem) {
-      particleSystem.spawnDamageText(this.x, this.y, amount, 'heal');
-    }
-  }
-
-  applySlow(factor = 0.5, duration = 1.5) {
-    this.slowFactor = factor;
-    this.slowTimer = duration;
-  }
-
-  freeze(duration = 1.2) {
-    this.isFrozen = true;
-    this.frozenTimer = duration;
-  }
-
-  // Cast Regular Skill
-  tryCastSkill(allFighters, skillManager, soundEngine, particleSystem) {
-    if (this.isDead || this.isFrozen || this.skillTimer < this.skillCooldown) return false;
-
-    // Find nearest enemy
-    const enemy = this.findNearestEnemy(allFighters);
-    if (!enemy) return false;
-
-    this.skillTimer = 0;
-
-    if (soundEngine) soundEngine.playSkill(this.skillType);
-    if (particleSystem) {
-      particleSystem.spawnShockwave(this.x, this.y, this.glowColor, 35);
+      particleSystem.spawnDamageText(this.x, this.y - 10, this.skill1Name, 'skill', this.color);
+      particleSystem.spawnShockwave(this.x, this.y, this.glowColor, 35, 2);
     }
 
     switch (this.skillType) {
-      case 'spore': // Nana
-        skillManager.spawnAoe(this, enemy.x + (Math.random() - 0.5) * 40, enemy.y + (Math.random() - 0.5) * 40, {
-          radius: 55,
-          color: this.color,
-          damagePerTick: Math.floor(this.atk * 0.35),
-          duration: 3.0,
-          slow: 0.6
-        });
+      case 'nana_sarangi': // Nana's Single Sarang-i Gun shot
+        skillManager.spawnSarangiGun(this, enemy, this.projectileImg, particleSystem, false);
         break;
 
-      case 'fire': // Kanna / Shibuki
-        skillManager.spawnProjectile(this, enemy, {
-          speed: 9,
-          damage: this.atk * 0.9,
-          color: '#fb923c',
-          radius: 12,
-          homing: true
-        });
+      case 'shibuki_fox': // Shibuki's 2 Horns: "똑, 똑" sequential launch
+        // 1st Horn immediately
+        skillManager.spawnShibukiHorn(this, enemy, this.hornImg, particleSystem, 1);
+        // 2nd Horn delayed by 0.35s
+        this.pendingHorns.push({ delay: 0.35 });
         break;
 
-      case 'ice': // Yuni / Rin
-        skillManager.spawnProjectile(this, enemy, {
-          speed: 10,
-          damage: this.atk * 0.85,
-          color: '#38bdf8',
-          radius: 10
-        });
-        enemy.applySlow(0.4, 1.0);
+      case 'punch': // Riko: Tornado straight dash
+        const angle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
+        this.vx = Math.cos(angle) * 11;
+        this.vy = Math.sin(angle) * 11;
+        enemy.takeDamage(this.atk * 0.9, this, particleSystem, 'skill');
+        if (particleSystem) particleSystem.spawnShockwave(this.x, this.y, '#fbbf24', 50);
         break;
 
-      case 'laser': // Hina / Kanade
+      case 'ice': // Rin / Yuni
+        skillManager.spawnIceShard(this, enemy, particleSystem);
+        break;
+
+      case 'laser': // Hina / Fuya
         skillManager.spawnLaser(this, enemy, {
-          length: 500,
-          width: 7,
+          length: 550,
+          width: 8,
           damage: this.atk * 1.3,
           color: this.color
-        });
+        }, particleSystem);
         break;
 
       case 'vampire': // Lize
-        skillManager.spawnProjectile(this, enemy, {
-          speed: 8.5,
-          damage: this.atk * 0.9,
-          color: '#ef4444',
-          radius: 11
-        });
-        this.heal(Math.floor(this.atk * 0.4), particleSystem);
+        skillManager.spawnBloodOrb(this, enemy, particleSystem);
+        this.heal(Math.floor(this.atk * 0.35), particleSystem);
         break;
 
-      case 'punch': // Mashiro / Riko
-        // Dash directly at enemy
-        const angle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
-        this.vx += Math.cos(angle) * 8;
-        this.vy += Math.sin(angle) * 8;
-        if (particleSystem) particleSystem.spawnShockwave(this.x, this.y, '#f472b6', 50);
+      case 'smash': // Mashiro
+        skillManager.spawnHammerSmash(this, enemy, particleSystem);
+        break;
+
+      case 'gravity': // Tabi
+        skillManager.spawnGravityPulse(this, enemy, particleSystem);
+        break;
+
+      case 'dragon_fire': // Kanna
+        skillManager.spawnDragonFire(this, enemy, particleSystem);
+        break;
+
+      default:
+        skillManager.spawnGenericBullet(this, enemy, particleSystem);
         break;
     }
-
-    return true;
   }
 
-  // Cast Ultimate Skill
-  canCastUlt() {
-    return this.sp >= this.maxSp && !this.isDead && !this.isFrozen;
-  }
-
-  triggerUlt(allFighters, skillManager, soundEngine, particleSystem, arena) {
-    if (!this.canCastUlt()) return false;
-
-    this.sp = 0;
-    this.ultAnimationTimer = 0.8;
-    this.invulnerableTimer = 1.0;
+  // Ultimate Skill
+  triggerUltimate(allFighters, skillManager, soundEngine, particleSystem, arena, skillPauseEnabled = true) {
+    if (this.isDead || !skillManager) return;
 
     if (soundEngine) soundEngine.playUlt();
     if (particleSystem) {
       particleSystem.shake(12);
-      particleSystem.spawnShockwave(this.x, this.y, this.glowColor, 120, 6);
-      particleSystem.spawnDamageText(this.x, this.y, 'ULTIMATE!', 'ult', this.glowColor);
+      particleSystem.spawnShockwave(this.x, this.y, this.glowColor, 100, 6);
+      particleSystem.spawnDamageText(this.x, this.y - 18, `ULT: ${this.ultName}`, 'ult', '#ffd700');
     }
+
+    // Trigger Cutin Banner event
+    window.dispatchEvent(new CustomEvent('fighter-ult-cutin', {
+      detail: {
+        fighter: this,
+        ultName: this.ultName,
+        ultDesc: this.ultDesc,
+        shouldPause: skillPauseEnabled
+      }
+    }));
 
     const enemies = allFighters.filter(f => f !== this && !f.isDead && (!this.team || f.team !== this.team));
 
     switch (this.skillType) {
-      case 'spore': // Nana's Mega Mushroom Field
-        // Spawn 4 mushroom spore bombs across arena
-        for (let i = 0; i < 4; i++) {
-          const offsetX = (Math.random() - 0.5) * arena.currentRadius * 1.2;
-          const offsetY = (Math.random() - 0.5) * arena.currentRadius * 1.2;
-          skillManager.spawnAoe(this, arena.cx + offsetX, arena.cy + offsetY, {
-            radius: 80,
-            color: '#c084fc',
-            damagePerTick: Math.floor(this.atk * 0.55),
-            duration: 4.5,
-            slow: 0.4,
-            isUlt: true
-          });
+      case 'nana_sarangi': // Nana's Sarang-i Barrage / Spray
+        skillManager.spawnSarangiBarrage(this, enemies, this.projectileImg, particleSystem, 8);
+        break;
+
+      case 'shibuki_fox': // Shibuki's Kaengkaengi Fox Form Transformation!
+        this.isFoxTransformed = true;
+        this.foxTransformTimer = this.foxMaxDuration;
+        this.invulnerableTimer = 1.0;
+        if (particleSystem) {
+          particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 120, 8);
+          particleSystem.spawnDamageText(this.x, this.y, '🦊 캥캥이 변신!', 'buff', '#a855f7');
         }
         break;
 
-      case 'fire': // Kanna / Shibuki: Dragon Nova
-        for (let i = 0; i < 8; i++) {
-          const angle = (i * Math.PI * 2) / 8;
-          skillManager.spawnProjectile(this, { x: this.x + Math.cos(angle) * 100, y: this.y + Math.sin(angle) * 100 }, {
-            angle,
-            speed: 8.5,
-            damage: this.atk * 1.6,
-            color: '#f97316',
-            radius: 16,
-            isUlt: true
-          });
-        }
-        break;
-
-      case 'ice': // Yuni / Rin: Absolute Blizzard
-        for (const enemy of enemies) {
-          enemy.freeze(2.0);
-          enemy.takeDamage(this.atk * 1.2, this, particleSystem, 'ult');
-        }
-        skillManager.spawnAoe(this, arena.cx, arena.cy, {
-          radius: arena.currentRadius * 0.9,
-          color: '#38bdf8',
-          damagePerTick: Math.floor(this.atk * 0.3),
+      case 'punch': // Riko Mega Vortex Punch
+        skillManager.spawnAoe(this, arena ? arena.cx : this.x, arena ? arena.cy : this.y, {
+          radius: 110,
+          color: '#fbbf24',
+          damagePerTick: Math.floor(this.atk * 0.75),
           duration: 3.0,
           isUlt: true
         });
         break;
 
-      case 'laser': // Hina / Kanade: Mega Snipe
+      case 'ice': // Rin / Yuni Absolute Zero Dome
+        for (const enemy of enemies) {
+          enemy.freeze(2.2);
+          enemy.takeDamage(this.atk * 1.2, this, particleSystem, 'ult');
+        }
+        break;
+
+      case 'laser': // Hina / Fuya Cross Laser Barrage
         for (let i = 0; i < 4; i++) {
-          const angle = (i * Math.PI) / 2 + Math.random() * 0.5;
+          const angle = (i * Math.PI) / 2 + Math.random() * 0.4;
           skillManager.spawnLaser(this, null, {
             angle,
             length: 800,
-            width: 16,
-            damage: this.atk * 2.2,
-            color: '#06b6d4',
+            width: 14,
+            damage: this.atk * 2.0,
+            color: this.color,
             isUlt: true
-          });
+          }, particleSystem);
         }
         break;
 
-      case 'vampire': // Lize: Crimson Slaughter
+      case 'vampire': // Lize Crimson Carnival
         for (const enemy of enemies) {
-          enemy.takeDamage(this.atk * 1.5, this, particleSystem, 'ult');
+          enemy.takeDamage(this.atk * 1.4, this, particleSystem, 'ult');
         }
-        this.heal(Math.floor(this.maxHp * 0.35), particleSystem);
-        if (particleSystem) {
-          particleSystem.spawnShockwave(this.x, this.y, '#ef4444', 140, 8);
-        }
+        this.heal(Math.floor(this.maxHp * 0.3), particleSystem);
         break;
 
-      case 'punch': // Mashiro / Riko: Gigantic Meteor
-        skillManager.spawnAoe(this, arena.cx, arena.cy, {
-          radius: 120,
-          color: '#fbbf24',
-          damagePerTick: Math.floor(this.atk * 0.8),
+      case 'smash': // Mashiro Giant Dessert Hammer
+        skillManager.spawnAoe(this, arena ? arena.cx : this.x, arena ? arena.cy : this.y, {
+          radius: 130,
+          color: '#f472b6',
+          damagePerTick: Math.floor(this.atk * 0.85),
           duration: 2.5,
           isUlt: true
         });
-        for (const enemy of enemies) {
-          const dist = Math.hypot(enemy.x - arena.cx, enemy.y - arena.cy);
-          if (dist < 120) {
-            enemy.takeDamage(this.atk * 2.0, this, particleSystem, 'ult');
-            enemy.freeze(1.5);
-          }
+        break;
+
+      case 'gravity': // Tabi Nebula Black Hole
+        skillManager.spawnGravityAoe(this, arena ? arena.cx : this.x, arena ? arena.cy : this.y, particleSystem);
+        break;
+
+      case 'dragon_fire': // Kanna Dragon Nova
+        for (let i = 0; i < 8; i++) {
+          const angle = (i * Math.PI * 2) / 8;
+          skillManager.spawnDragonFireBullet(this, angle, particleSystem);
         }
         break;
     }
+  }
 
-    return true;
+  // Kaengkaengi Continuous Claw Scratch on Enemy Contact
+  applyFoxScratch(enemy, particleSystem) {
+    if (!this.isFoxTransformed || this.scratchCooldown > 0 || !enemy || enemy.isDead) return;
+
+    this.scratchCooldown = 0.25; // Continuous scratch tick every 0.25s
+    const dmg = Math.floor(this.atk * 0.48);
+    enemy.takeDamage(dmg, this, particleSystem, 'crit');
+
+    if (particleSystem) {
+      particleSystem.spawnScratch(enemy.x, enemy.y, '#c084fc');
+      particleSystem.spawnDamageText(enemy.x, enemy.y, '할큄!', 'crit', '#f43f5e');
+      particleSystem.shake(4);
+    }
+  }
+
+  takeDamage(amount, attacker, particleSystem, type = 'normal') {
+    if (this.isDead || this.invulnerableTimer > 0) return 0;
+
+    const finalDamage = Math.max(5, Math.floor(amount - this.def * 0.3));
+    this.hp -= finalDamage;
+
+    if (particleSystem) {
+      particleSystem.spawnDamageNumber(this.x, this.y, finalDamage, type);
+      particleSystem.spawnSparks(this.x, this.y, this.color, type === 'crit' ? 8 : 4);
+    }
+
+    if (this.hp <= 0) {
+      this.hp = 0;
+      this.die(particleSystem);
+    }
+
+    return finalDamage;
+  }
+
+  heal(amount, particleSystem) {
+    if (this.isDead) return;
+    const healed = Math.min(amount, this.maxHp - this.hp);
+    this.hp += healed;
+    if (particleSystem && healed > 0) {
+      particleSystem.spawnDamageNumber(this.x, this.y, `+${healed}`, 'heal');
+      particleSystem.spawnSparks(this.x, this.y, '#22c55e', 6);
+    }
+  }
+
+  freeze(duration) {
+    this.isFrozen = true;
+    this.freezeTimer = duration;
+  }
+
+  die(particleSystem) {
+    this.isDead = true;
+    if (particleSystem) {
+      particleSystem.spawnShockwave(this.x, this.y, '#ef4444', 90, 8);
+      particleSystem.spawnSparks(this.x, this.y, '#ffffff', 20);
+      particleSystem.spawnDamageText(this.x, this.y, 'K.O.', 'crit', '#ef4444');
+    }
   }
 
   findNearestEnemy(allFighters) {
@@ -391,74 +467,115 @@ class Fighter {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // 1. Glowing Outer Aura
-    ctx.shadowBlur = this.sp >= this.maxSp ? 25 : 12;
-    ctx.shadowColor = this.sp >= this.maxSp ? '#ffd700' : this.glowColor;
+    // 1. Fox Transformation Rendering (Shibuki Kaengkaengi)
+    if (this.isFoxTransformed) {
+      // Radiant Fox Aura
+      ctx.shadowBlur = 25;
+      ctx.shadowColor = '#c084fc';
 
-    // 2. Base Body Circle
-    ctx.fillStyle = '#151728';
-    ctx.beginPath();
-    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-    ctx.fill();
+      // Draw Fox Cutout image
+      if (this.foxImg && this.foxImg.complete && this.foxImg.naturalWidth > 0) {
+        const foxSize = this.radius * 2.4;
+        ctx.drawImage(this.foxImg, -foxSize / 2, -foxSize / 2, foxSize, foxSize);
+      } else {
+        // Fallback circle
+        ctx.fillStyle = '#8b5cf6';
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = '28px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🦊', 0, 2);
+      }
 
-    // Border ring with team / character color
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = this.color;
-    ctx.stroke();
-
-    // 3. Avatar Icon / Emoji
-    if (this.avatarImg) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(0, 0, this.radius - 2, 0, Math.PI * 2);
-      ctx.clip();
-      ctx.drawImage(this.avatarImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
-      ctx.restore();
-    } else {
-      // Draw Emoji
-      ctx.font = `${Math.floor(this.radius * 0.95)}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(this.emoji, 0, 2);
-    }
-
-    // 4. Status Indicator (Frozen ice block)
-    if (this.isFrozen) {
-      ctx.fillStyle = 'rgba(56, 189, 248, 0.45)';
+      // Draw Fox Claws Energy Effect
+      ctx.strokeStyle = '#f43f5e';
+      ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.arc(0, 0, this.radius + 3, 0, Math.PI * 2);
+      ctx.stroke();
+
+    } else {
+      // 2. Standard Human Fighter Rendering
+
+      // Soft character aura
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = this.glowColor;
+
+      // Base Body Circle
+      ctx.fillStyle = '#171926';
+      ctx.beginPath();
+      ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
       ctx.fill();
+
+      // Border ring with character color
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = this.color;
+      ctx.stroke();
+
+      // Avatar Icon (Real Cutout Photo or Emoji)
+      if (this.avatarImg && this.avatarImg.complete && this.avatarImg.naturalWidth > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radius - 2, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(this.avatarImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+        ctx.restore();
+      } else {
+        ctx.font = `${Math.floor(this.radius * 0.9)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(this.emoji, 0, 2);
+      }
     }
 
-    // 5. Circular SP Ring around body
-    if (this.sp > 0) {
-      const spAngle = (this.sp / this.maxSp) * Math.PI * 2;
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = this.sp >= this.maxSp ? '#ffd700' : 'rgba(168, 85, 247, 0.9)';
+    // 3. Frozen Ice Barrier Overlay
+    if (this.isFrozen) {
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.5)';
       ctx.beginPath();
-      ctx.arc(0, 0, this.radius + 4, -Math.PI / 2, -Math.PI / 2 + spAngle);
+      ctx.arc(0, 0, this.radius + 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
       ctx.stroke();
     }
 
-    // 6. Overhead Health Bar
-    const hpBarWidth = 40;
+    // 4. Cooldown Progress Arc around border (Skill 1 & Ult)
+    const ultRatio = Math.min(1.0, this.ultTimer / this.ultMaxCd);
+    if (ultRatio < 1.0) {
+      const ultAngle = ultRatio * Math.PI * 2;
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#eab308';
+      ctx.beginPath();
+      ctx.arc(0, 0, this.radius + 4, -Math.PI / 2, -Math.PI / 2 + ultAngle);
+      ctx.stroke();
+    } else {
+      // Ready indicator glow ring
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#ffd700';
+      ctx.beginPath();
+      ctx.arc(0, 0, this.radius + 4, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // 5. Overhead Health Bar
+    const hpBarWidth = 44;
     const hpBarHeight = 5;
     const hpY = -this.radius - 12;
 
-    // Background
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
     ctx.fillRect(-hpBarWidth / 2, hpY, hpBarWidth, hpBarHeight);
 
-    // Fill
     const hpRatio = Math.max(0, this.hp / this.maxHp);
     ctx.fillStyle = hpRatio > 0.5 ? '#22c55e' : hpRatio > 0.25 ? '#eab308' : '#ef4444';
     ctx.fillRect(-hpBarWidth / 2, hpY, hpBarWidth * hpRatio, hpBarHeight);
 
-    // 7. Name Tag
+    // 6. Name Label
     ctx.font = "800 11px 'Noto Sans KR', sans-serif";
     ctx.textAlign = 'center';
     ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
     ctx.strokeText(this.name, 0, this.radius + 14);
     ctx.fillStyle = '#ffffff';
     ctx.fillText(this.name, 0, this.radius + 14);
