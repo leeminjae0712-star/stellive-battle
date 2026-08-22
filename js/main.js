@@ -1,7 +1,6 @@
 ﻿/**
  * Main Game Controller
- * Super smooth 60 FPS loop with zero shadow lag, huge 1:1 square battle arena,
- * and responsive 50:50 VS HUD.
+ * Bulletproof, error-resilient 60 FPS continuous loop.
  */
 
 class GameApp {
@@ -24,7 +23,6 @@ class GameApp {
     this.isPlaying = false;
     this.isPaused = false;
     this.speedMultiplier = 1.0;
-    this.skillPauseEnabled = false; // Disable freeze so it never stutters/lags
     this.lastTime = 0;
 
     this.init();
@@ -50,7 +48,7 @@ class GameApp {
     const size = Math.floor(Math.min(rect.width, rect.height || rect.width));
     if (size <= 0) return;
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 2); // Cap DPR to 2 to prevent GPU memory lag
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.canvasWidth = size;
     this.canvasHeight = size;
 
@@ -67,6 +65,7 @@ class GameApp {
     const btnStart = document.getElementById('btn-start');
     const btnStartText = document.getElementById('btn-start-text');
     btnStart.addEventListener('click', () => {
+      this.audio.init();
       if (!this.isPlaying) {
         this.isPlaying = true;
         this.isPaused = false;
@@ -83,6 +82,7 @@ class GameApp {
 
     const btnReset = document.getElementById('btn-reset');
     btnReset.addEventListener('click', () => {
+      this.audio.init();
       this.resetFighters();
       this.isPlaying = false;
       this.isPaused = false;
@@ -133,7 +133,7 @@ class GameApp {
       document.getElementById('btn-start').classList.add('btn-warning');
     });
 
-    // Cutin Event Listener (Non-blocking banner)
+    // Cutin Event Listener
     window.addEventListener('fighter-ult-cutin', (e) => {
       this.showUltCutin(e.detail.fighter, e.detail.ultName, e.detail.ultDesc);
     });
@@ -149,7 +149,7 @@ class GameApp {
     const nanaData = this.allCharacterData.find(c => c.id === 'nana') || this.allCharacterData[0];
     const shibukiData = this.allCharacterData.find(c => c.id === 'shibuki') || this.allCharacterData[1];
 
-    const spawnOffsetX = this.arena.halfSize * 0.55;
+    const spawnOffsetX = this.arena.halfSize * 0.5;
     const nana = new Fighter(nanaData, this.arena.cx - spawnOffsetX, this.arena.cy);
     const shibuki = new Fighter(shibukiData, this.arena.cx + spawnOffsetX, this.arena.cy);
 
@@ -161,7 +161,6 @@ class GameApp {
     const nana = this.fighters.find(f => f.id === 'nana');
     const shibuki = this.fighters.find(f => f.id === 'shibuki');
 
-    // 1. Update Nana
     if (nana) {
       const hpPercent = Math.max(0, (nana.hp / nana.maxHp) * 100);
       const hpEl = document.getElementById('hud-hp-nana');
@@ -212,7 +211,6 @@ class GameApp {
       }
     }
 
-    // 2. Update Shibuki
     if (shibuki) {
       const hpPercent = Math.max(0, (shibuki.hp / shibuki.maxHp) * 100);
       const hpEl = document.getElementById('hud-hp-shibuki');
@@ -318,37 +316,42 @@ class GameApp {
   }
 
   loop(currentTime) {
-    if (!this.lastTime) this.lastTime = currentTime;
-    const dt = Math.min(0.04, (currentTime - this.lastTime) / 1000);
-    this.lastTime = currentTime;
+    try {
+      if (!this.lastTime) this.lastTime = currentTime;
+      const dt = Math.min(0.04, (currentTime - this.lastTime) / 1000);
+      this.lastTime = currentTime;
 
-    if (this.isPlaying && !this.isPaused) {
-      const effSpeed = this.speedMultiplier;
+      if (this.isPlaying && !this.isPaused) {
+        const effSpeed = this.speedMultiplier;
 
-      // 1. Update Fighters
-      for (const f of this.fighters) {
-        f.update(dt, this.arena, this.fighters, this.skills, this.audio, this.particles, effSpeed, false);
+        // 1. Update Fighters
+        for (const f of this.fighters) {
+          f.update(dt, this.arena, this.fighters, this.skills, this.audio, this.particles, effSpeed);
+        }
+
+        // 2. Physics (Continuous unsticking bounce)
+        this.physics.update(dt, this.fighters, this.arena, this.audio, this.particles, effSpeed);
+
+        // 3. Update Skills & Bullets
+        this.skills.update(dt, this.arena, this.fighters, this.particles, this.audio, effSpeed);
+
+        // 4. Check Win Condition
+        this.checkGameEnd();
       }
 
-      // 2. Physics
-      this.physics.update(dt, this.fighters, this.arena, this.audio, this.particles, effSpeed);
+      // Update 50:50 VS HUD
+      this.updateVsHud();
 
-      // 3. Update Skills & Bullets
-      this.skills.update(dt, this.arena, this.fighters, this.particles, this.audio, effSpeed);
+      // Update Particles
+      this.particles.update(dt, this.speedMultiplier);
 
-      // 4. Check Win Condition
-      this.checkGameEnd();
+      // Render Canvas
+      this.render();
+    } catch (e) {
+      console.error('Simulation loop exception handled:', e);
     }
 
-    // Update 50:50 VS HUD
-    this.updateVsHud();
-
-    // Update Particles
-    this.particles.update(dt, this.speedMultiplier);
-
-    // Render Canvas
-    this.render();
-
+    // Always continue loop
     requestAnimationFrame((t) => this.loop(t));
   }
 
