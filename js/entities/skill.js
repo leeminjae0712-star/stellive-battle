@@ -1,9 +1,8 @@
 ﻿/**
  * Skill Manager - Pro Asymmetric Combat Engine
- * Supports:
  * - Nana: Heavy Sniper Shot (160 dmg) & Rapid Machine Gun (28x16)
  * - Shibuki: Quick Horn Poke (38x2) & Fox Berserk
- * - Riko: Jarvan E Holy Sword Drop (Fixed at Map Center, Global Map-Wide AOE with low balanced damage: 35 impact + 12x3 pulses) & 2.8s Time Stop
+ * - Riko: GIANT Holy Sword Drop (No weird circle, Grand 260px Sword, Full-Screen Arena AOE) & 2.8s Time Stop
  */
 
 class SkillManager {
@@ -109,34 +108,32 @@ class SkillManager {
     }
   }
 
-  // ═══ 4. Riko: Holy Sword Drop [성검 투하 - Jarvan E style, Center Spawn & Global Low AOE] ═══
+  // ═══ 4. Riko: GIANT Holy Sword Drop [성검 투하 - Center Drop & Full Screen Map AOE] ═══
   spawnRikoSwordDrop(fighter, arenaCenterX, arenaCenterY, swordImg, particleSystem, soundEngine) {
-    // Exact Map Center (No tracking / homing bug)
     const targetX = arenaCenterX;
     const targetY = arenaCenterY;
 
     this.swordDrops.push({
       owner: fighter,
       img: swordImg,
-      state: 'falling', // 'falling' -> 'planted'
+      state: 'falling',
       x: targetX,
-      y: targetY - 340,
+      y: targetY - 450, // Starts high up
       targetX: targetX,
       targetY: targetY,
-      vy: 30,
+      vy: 36, // Fast dramatic descent
       rotation: 0,
-      impactDmg: 35, // Low balanced impact damage
-      duration: 2.6,
+      impactDmg: 35,
+      duration: 2.8,
       pulseTimer: 0.7,
       pulseInterval: 0.8,
-      pulseDmg: 12, // Low balanced tick damage
+      pulseDmg: 12,
       color: '#10b981',
       glowColor: '#34d399'
     });
 
     if (particleSystem) {
-      particleSystem.spawnShockwave(targetX, targetY, '#10b981', 80, 2);
-      particleSystem.spawnDamageText(targetX, targetY - 30, '⚔️ 성검 투하!', 'skill', '#10b981');
+      particleSystem.spawnDamageText(targetX, targetY - 140, '⚔️ 성검 투하 (전체 공격)!', 'skill', '#10b981');
     }
   }
 
@@ -149,13 +146,14 @@ class SkillManager {
     try { if (soundEngine) soundEngine.playTimeStop(); } catch(e) {}
     if (particleSystem) {
       particleSystem.shake(12);
-      particleSystem.spawnShockwave(fighter.x, fighter.y, '#10b981', 180, 6);
+      particleSystem.spawnShockwave(fighter.x, fighter.y, '#10b981', 200, 6);
       particleSystem.spawnDamageText(fighter.x, fighter.y - 36, '⏳ THE WORLD (시간 정지)!', 'ult', '#34d399');
     }
   }
 
   update(dt, arena, allFighters, particleSystem, soundEngine, speedMultiplier = 1) {
     const effSpeed = speedMultiplier;
+    const arenaSize = arena ? arena.size : 800;
 
     // ── Update Time Stop State ──
     if (this.isTimeStopped) {
@@ -171,13 +169,13 @@ class SkillManager {
         try { if (soundEngine) soundEngine.playTimeResume(); } catch(e) {}
         if (particleSystem) {
           particleSystem.shake(8);
-          particleSystem.spawnShockwave(arena.cx, arena.cy, '#34d399', 240, 8);
+          particleSystem.spawnShockwave(arena.cx, arena.cy, '#34d399', arenaSize, 8);
           particleSystem.spawnDamageText(arena.cx, arena.cy, '✨ 시간 재개!', 'buff', '#10b981');
         }
       }
     }
 
-    // ── Update Holy Sword Drops (Map Center & Map-Wide Global AOE) ──
+    // ── Update Holy Sword Drops (GIANT Sword & Full Screen Map Shockwave) ──
     for (let i = this.swordDrops.length - 1; i >= 0; i--) {
       const sw = this.swordDrops[i];
 
@@ -189,7 +187,7 @@ class SkillManager {
         sw.y += sw.vy * effSpeed;
 
         if (particleSystem) {
-          particleSystem.spawnTrail(sw.x, sw.y, sw.color, 8);
+          particleSystem.spawnTrail(sw.x, sw.y, sw.color, 12);
         }
 
         if (sw.y >= sw.targetY) {
@@ -199,13 +197,13 @@ class SkillManager {
           // Center Impact Crash
           try { if (soundEngine) soundEngine.playSwordDrop(); } catch(e) {}
           if (particleSystem) {
-            particleSystem.shake(8);
-            // Global Map Shockwave
-            particleSystem.spawnShockwave(sw.x, sw.y, sw.glowColor, arena.size * 0.65, 5);
-            particleSystem.spawnSparks(sw.x, sw.y, '#34d399', 14, 5);
+            particleSystem.shake(12);
+            // Full-Arena Map-Wide Shockwave
+            particleSystem.spawnShockwave(sw.x, sw.y, sw.glowColor, arenaSize * 0.9, 6);
+            particleSystem.spawnSparks(sw.x, sw.y, '#34d399', 24, 7);
           }
 
-          // Global Map Impact Damage (35 dmg to ALL enemies on the map)
+          // Full Screen Map Attack: Hits ALL enemies on the map!
           for (const enemy of allFighters) {
             if (enemy === sw.owner || enemy.isDead) continue;
             enemy.takeDamage(sw.impactDmg, sw.owner, particleSystem, 'crit');
@@ -215,16 +213,16 @@ class SkillManager {
         sw.duration -= dt * effSpeed;
         sw.pulseTimer -= dt * effSpeed;
 
-        // Periodic Global Map-Wide Wave (12 dmg)
+        // Periodic Full-Map Arena Shockwave Pulse
         if (sw.pulseTimer <= 0) {
           sw.pulseTimer = sw.pulseInterval;
 
           if (particleSystem) {
-            particleSystem.spawnShockwave(sw.x, sw.y, sw.color, arena.size * 0.6, 2.5);
-            particleSystem.spawnSparks(sw.x, sw.y, '#10b981', 4, 2);
+            particleSystem.spawnShockwave(sw.x, sw.y, sw.color, arenaSize * 0.85, 3.5);
+            particleSystem.spawnSparks(sw.x, sw.y, '#10b981', 8, 3);
           }
 
-          // Deal low global damage to all enemies anywhere on the map
+          // Hits ALL enemies anywhere across the entire map
           for (const enemy of allFighters) {
             if (enemy === sw.owner || enemy.isDead) continue;
             enemy.takeDamage(sw.pulseDmg, sw.owner, particleSystem, 'normal');
@@ -233,7 +231,7 @@ class SkillManager {
 
         if (sw.duration <= 0) {
           if (particleSystem) {
-            particleSystem.spawnSparks(sw.x, sw.y, sw.color, 8, 2);
+            particleSystem.spawnSparks(sw.x, sw.y, sw.color, 12, 3);
           }
           this.swordDrops.splice(i, 1);
         }
@@ -293,52 +291,47 @@ class SkillManager {
   render(ctx) {
     ctx.save();
 
-    // ── 1. Render Planted / Falling Swords ──
+    // ── 1. Render GIANT Planted / Falling Holy Swords ──
     for (const sw of this.swordDrops) {
       ctx.save();
 
       if (sw.state === 'planted') {
-        // Ground Magic Circle & Pulsing Area
+        // Ground shadow & emerald glow at the base
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
         ctx.beginPath();
-        ctx.arc(sw.x, sw.y, 70, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.1)';
-        ctx.fill();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = 'rgba(52, 211, 153, 0.5)';
-        ctx.setLineDash([6, 6]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Ground shadow
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-        ctx.beginPath();
-        ctx.ellipse(sw.x, sw.y + 4, 28, 8, 0, 0, Math.PI * 2);
+        ctx.ellipse(sw.x, sw.y + 6, 45, 12, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Draw Vertical Planted Sword
+        // Emerald ground impact flare
+        const flarePulse = 0.3 + 0.2 * Math.sin(Date.now() * 0.008);
+        ctx.fillStyle = `rgba(16, 185, 129, ${flarePulse})`;
+        ctx.beginPath();
+        ctx.ellipse(sw.x, sw.y + 4, 60, 16, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw GIANT Vertical Planted Sword (56px x 240px)
         ctx.translate(sw.x, sw.y);
-        ctx.rotate(sw.rotation);
 
         if (sw.img && sw.img.complete && sw.img.naturalWidth > 0) {
-          const swW = 32;
-          const swH = 110;
-          ctx.drawImage(sw.img, -swW / 2, -swH + 15, swW, swH);
+          const swW = 56;
+          const swH = 240;
+          // Render sword standing vertically in the center, tip buried in ground
+          ctx.drawImage(sw.img, -swW / 2, -swH + 30, swW, swH);
         } else {
           ctx.fillStyle = '#10b981';
-          ctx.fillRect(-4, -80, 8, 80);
+          ctx.fillRect(-6, -180, 12, 180);
         }
 
       } else if (sw.state === 'falling') {
         ctx.translate(sw.x, sw.y);
-        ctx.rotate(sw.rotation);
 
         if (sw.img && sw.img.complete && sw.img.naturalWidth > 0) {
-          const swW = 34;
-          const swH = 115;
+          const swW = 60;
+          const swH = 260;
           ctx.drawImage(sw.img, -swW / 2, -swH / 2, swW, swH);
         } else {
           ctx.fillStyle = '#34d399';
-          ctx.fillRect(-5, -50, 10, 100);
+          ctx.fillRect(-8, -120, 16, 240);
         }
       }
 
