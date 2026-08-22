@@ -1,27 +1,31 @@
 ﻿/**
- * Arena Engine (Dynamic 1:1 Aspect Ratio 4-Corner Box Arena)
- * Eliminates all canvas distortion and maintains perfect geometric proportions.
+ * Arena Engine (1:1 Pure Square Arena)
+ * Standard 1:1 Aspect Ratio like Instagram Reels / Shorts.
  */
 
 class Arena {
-  constructor(width = 800, height = 540) {
-    this.resize(width, height);
+  constructor(size = 560) {
+    this.resize(size, size);
     this.restitution = 1.0;
   }
 
   resize(width, height) {
+    // Keep it a strict 1:1 square
+    const minDim = Math.min(width, height);
     this.width = width;
     this.height = height;
     this.cx = width / 2;
     this.cy = height / 2;
 
-    // 88% width, 84% height with clean margin
-    this.halfW = (width * 0.88) / 2;
-    this.halfH = (height * 0.84) / 2;
-    this.left = this.cx - this.halfW;
-    this.right = this.cx + this.halfW;
-    this.top = this.cy - this.halfH;
-    this.bottom = this.cy + this.halfH;
+    // Pure 1:1 Square Box bounds
+    this.boxSize = minDim * 0.88;
+    this.halfSize = this.boxSize / 2;
+    this.left = this.cx - this.halfSize;
+    this.right = this.cx + this.halfSize;
+    this.top = this.cy - this.halfSize;
+    this.bottom = this.cy + this.halfSize;
+    this.halfW = this.halfSize;
+    this.halfH = this.halfSize;
   }
 
   isInside(x, y, radius = 0) {
@@ -40,14 +44,14 @@ class Arena {
     ctx.fillStyle = '#0f111a';
     ctx.fillRect(0, 0, this.width, this.height);
 
-    // 2. Battle Ring Inner Fill
-    ctx.fillStyle = '#171926';
-    ctx.fillRect(this.left, this.top, this.halfW * 2, this.halfH * 2);
+    // 2. 1:1 Square Battle Floor
+    ctx.fillStyle = '#161928';
+    ctx.fillRect(this.left, this.top, this.boxSize, this.boxSize);
 
-    // 3. Subtle Arena Floor Grid Pattern
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+    // 3. Subtle Floor Grid
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
     ctx.lineWidth = 1;
-    const gridSize = 45;
+    const gridSize = 40;
     for (let x = this.left; x <= this.right; x += gridSize) {
       ctx.beginPath();
       ctx.moveTo(x, this.top);
@@ -61,11 +65,11 @@ class Arena {
       ctx.stroke();
     }
 
-    // 4. Center Ring (Perfect pure circle)
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+    // 4. Center Circle & Division Lines
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(this.cx, this.cy, Math.min(this.halfW, this.halfH) * 0.35, 0, Math.PI * 2);
+    ctx.arc(this.cx, this.cy, this.halfSize * 0.45, 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.beginPath();
@@ -75,42 +79,42 @@ class Arena {
     ctx.lineTo(this.right, this.cy);
     ctx.stroke();
 
-    // 5. Clean 4-Corner Outer Border
-    ctx.strokeStyle = '#3b4261';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(this.left, this.top, this.halfW * 2, this.halfH * 2);
-
-    // 6. Modern Tech Corner Accent Brackets
-    const bracketLen = 22;
-    ctx.strokeStyle = '#6366f1';
+    // 5. 1:1 Square Outer Border (Thick, Clean & Crisp)
+    ctx.strokeStyle = '#4f46e5';
     ctx.lineWidth = 4;
+    ctx.strokeRect(this.left, this.top, this.boxSize, this.boxSize);
+
+    // 6. Corner Brackets
+    const bLen = 24;
+    ctx.strokeStyle = '#a855f7';
+    ctx.lineWidth = 5;
 
     // Top-Left
     ctx.beginPath();
-    ctx.moveTo(this.left - 2, this.top + bracketLen);
+    ctx.moveTo(this.left - 2, this.top + bLen);
     ctx.lineTo(this.left - 2, this.top - 2);
-    ctx.lineTo(this.left + bracketLen, this.top - 2);
+    ctx.lineTo(this.left + bLen, this.top - 2);
     ctx.stroke();
 
     // Top-Right
     ctx.beginPath();
-    ctx.moveTo(this.right + 2, this.top + bracketLen);
+    ctx.moveTo(this.right + 2, this.top + bLen);
     ctx.lineTo(this.right + 2, this.top - 2);
-    ctx.lineTo(this.right - bracketLen, this.top - 2);
+    ctx.lineTo(this.right - bLen, this.top - 2);
     ctx.stroke();
 
     // Bottom-Left
     ctx.beginPath();
-    ctx.moveTo(this.left - 2, this.bottom - bracketLen);
+    ctx.moveTo(this.left - 2, this.bottom - bLen);
     ctx.lineTo(this.left - 2, this.bottom + 2);
-    ctx.lineTo(this.left + bracketLen, this.bottom + 2);
+    ctx.lineTo(this.left + bLen, this.bottom + 2);
     ctx.stroke();
 
     // Bottom-Right
     ctx.beginPath();
-    ctx.moveTo(this.right + 2, this.bottom - bracketLen);
+    ctx.moveTo(this.right + 2, this.bottom - bLen);
     ctx.lineTo(this.right + 2, this.bottom + 2);
-    ctx.lineTo(this.right - bracketLen, this.bottom + 2);
+    ctx.lineTo(this.right - bLen, this.bottom + 2);
     ctx.stroke();
 
     ctx.restore();

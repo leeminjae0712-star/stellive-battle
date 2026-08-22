@@ -1,6 +1,6 @@
 ﻿/**
  * Particle & Visual Effects Engine
- * Handles hits, sparks, floating damage text, shockwaves, claw scratches, and screen shake.
+ * Large, bold, high-contrast floating damage numbers & juicy hit sparks.
  */
 
 class ParticleSystem {
@@ -33,7 +33,7 @@ class ParticleSystem {
         y,
         vx: Math.cos(angle) * velocity,
         vy: Math.sin(angle) * velocity,
-        radius: Math.random() * 3 + 2,
+        radius: Math.random() * 3 + 2.5,
         color,
         alpha: 1,
         life: 1,
@@ -50,7 +50,7 @@ class ParticleSystem {
       vy: (Math.random() - 0.5) * 0.4,
       radius: radius * 0.7,
       color,
-      alpha: 0.8,
+      alpha: 0.85,
       life: 1,
       decay: 0.06
     });
@@ -69,7 +69,6 @@ class ParticleSystem {
     });
   }
 
-  // Kaengkaengi Claw Scratch Slash VFX
   spawnScratch(x, y, color = '#c084fc') {
     const angle = (Math.random() - 0.5) * 0.5;
     this.scratches.push({
@@ -85,30 +84,27 @@ class ParticleSystem {
 
   spawnDamageNumber(x, y, amount, type = 'normal') {
     let text = `${amount}`;
-    let scale = 1.0;
+    let scale = 1.3;
     let color = '#ffffff';
-    let fontWeight = '700';
+    let fontWeight = '900';
 
     if (type === 'crit') {
-      scale = 1.4;
-      color = '#f43f5e';
+      scale = 1.6;
+      color = '#fbbf24';
       text = `💥 ${amount}`;
-      fontWeight = '900';
     } else if (type === 'heal') {
-      scale = 1.1;
+      scale = 1.3;
       color = '#22c55e';
       text = `+${amount}`;
-      fontWeight = '800';
     } else if (type === 'ult') {
-      scale = 1.6;
+      scale = 1.8;
       color = '#ffd700';
       text = `⚡ ${amount}`;
-      fontWeight = '900';
     }
 
     this.damageTexts.push({
       x: x + (Math.random() - 0.5) * 16,
-      y: y - 10,
+      y: y - 14,
       text,
       color,
       alpha: 1,
@@ -120,27 +116,24 @@ class ParticleSystem {
   }
 
   spawnDamageText(x, y, text, type = 'normal', color = '#ffffff') {
-    let scale = 1.1;
+    let scale = 1.3;
     let finalColor = color;
-    let fontWeight = '800';
+    let fontWeight = '900';
 
     if (type === 'crit') {
-      scale = 1.4;
-      finalColor = '#f43f5e';
-      fontWeight = '900';
-    } else if (type === 'buff') {
-      scale = 1.3;
-      finalColor = '#a855f7';
-      fontWeight = '900';
-    } else if (type === 'ult') {
       scale = 1.6;
+      finalColor = '#f43f5e';
+    } else if (type === 'buff') {
+      scale = 1.5;
+      finalColor = '#a855f7';
+    } else if (type === 'ult') {
+      scale = 1.8;
       finalColor = '#ffd700';
-      fontWeight = '900';
     }
 
     this.damageTexts.push({
       x: x + (Math.random() - 0.5) * 14,
-      y: y - 12,
+      y: y - 16,
       text,
       color: finalColor,
       alpha: 1,
@@ -152,7 +145,6 @@ class ParticleSystem {
   }
 
   update(dt, speedMultiplier = 1) {
-    // 1. Update Particles
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.x += p.vx * speedMultiplier;
@@ -164,7 +156,6 @@ class ParticleSystem {
       }
     }
 
-    // 2. Update Shockwaves
     for (let i = this.shockwaves.length - 1; i >= 0; i--) {
       const sw = this.shockwaves[i];
       sw.radius += sw.growthRate * speedMultiplier;
@@ -174,7 +165,6 @@ class ParticleSystem {
       }
     }
 
-    // 3. Update Claw Scratches
     for (let i = this.scratches.length - 1; i >= 0; i--) {
       const sc = this.scratches[i];
       sc.life -= sc.decay * speedMultiplier;
@@ -184,18 +174,16 @@ class ParticleSystem {
       }
     }
 
-    // 4. Update Damage Texts
     for (let i = this.damageTexts.length - 1; i >= 0; i--) {
       const dtText = this.damageTexts[i];
       dtText.y += dtText.vy * speedMultiplier;
-      dtText.life -= 0.024 * speedMultiplier;
+      dtText.life -= 0.022 * speedMultiplier;
       dtText.alpha = Math.max(0, dtText.life);
       if (dtText.life <= 0) {
         this.damageTexts.splice(i, 1);
       }
     }
 
-    // 5. Update Screen Shake
     if (this.screenShake > 0) {
       this.screenShake *= 0.88;
       if (this.screenShake < 0.1) this.screenShake = 0;
@@ -205,7 +193,6 @@ class ParticleSystem {
   render(ctx) {
     ctx.save();
 
-    // Render Shockwaves
     for (const sw of this.shockwaves) {
       ctx.save();
       ctx.globalAlpha = sw.alpha;
@@ -217,7 +204,6 @@ class ParticleSystem {
       ctx.restore();
     }
 
-    // Render Claw Scratches (3 sharp diagonal slashes)
     for (const sc of this.scratches) {
       ctx.save();
       ctx.translate(sc.x, sc.y);
@@ -238,7 +224,6 @@ class ParticleSystem {
       ctx.restore();
     }
 
-    // Render Particles
     for (const p of this.particles) {
       ctx.save();
       ctx.globalAlpha = p.alpha;
@@ -249,22 +234,22 @@ class ParticleSystem {
       ctx.restore();
     }
 
-    // Render Floating Damage / Text
+    // Large Bold Damage Text with Thick Black Stroke Outline
     for (const d of this.damageTexts) {
       ctx.save();
       ctx.globalAlpha = d.alpha;
-      ctx.font = `${d.fontWeight} ${Math.floor(15 * d.scale)}px 'Outfit', 'Noto Sans KR', sans-serif`;
+      ctx.font = `${d.fontWeight} ${Math.floor(18 * d.scale)}px 'Black Han Sans', 'Outfit', sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
-      // Dark Outline
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
+      // Thick Black Outline
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#000000';
       ctx.strokeText(d.text, d.x, d.y);
 
-      // Glow & Color
+      // Text Fill
       ctx.fillStyle = d.color;
-      ctx.shadowBlur = 6;
+      ctx.shadowBlur = 8;
       ctx.shadowColor = d.color;
       ctx.fillText(d.text, d.x, d.y);
       ctx.restore();

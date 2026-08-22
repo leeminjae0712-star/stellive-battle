@@ -1,6 +1,7 @@
 ﻿/**
  * Fighter Entity Class
- * Specialized for Hanako Nana (Gunner with Sarang-i) & Tenko Shibuki (Kaengkaengi Fox & Horns).
+ * Specialized for Hanako Nana & Tenko Shibuki with Reels-style visible cooldowns,
+ * large bold high-contrast fonts, and 1:1 square arena physics.
  */
 
 class Fighter {
@@ -16,10 +17,10 @@ class Fighter {
     this.glowColor = config.glowColor || this.color;
     this.emoji = config.emoji || '⭐';
 
-    // Position & Physics (Snappy & dynamic bouncing)
+    // Position & Physics
     this.x = x;
     this.y = y;
-    this.baseRadius = 32; // Larger, clearer circular avatar
+    this.baseRadius = 34; // Large, clear circular avatar
     this.radius = this.baseRadius;
     this.mass = 1.0;
 
@@ -47,7 +48,7 @@ class Fighter {
     this.ultMaxCd = config.ultCooldown || 13.0;
     this.ultTimer = 0;
 
-    // Nana's Gun Aim & Machine Gun Rapid Fire ("뚜루루룰루")
+    // Nana Machine Gun ("뚜루루룰루")
     this.aimAngle = initialAngle;
     this.muzzleFlashTimer = 0;
     this.isMachineGunning = false;
@@ -56,7 +57,7 @@ class Fighter {
     this.machineGunInterval = 0.085;
     this.machineGunBulletsLeft = 0;
 
-    // Shibuki's Fox Transformation & Dash
+    // Shibuki Fox Transform & Dash
     this.isFoxTransformed = false;
     this.foxTransformTimer = 0;
     this.foxMaxDuration = 5.0;
@@ -107,7 +108,7 @@ class Fighter {
     const effDt = dt * speedMultiplier;
     const nearestEnemy = this.findNearestEnemy(allFighters);
 
-    // 1. Aim towards nearest enemy
+    // Aim towards nearest enemy
     if (nearestEnemy) {
       this.aimAngle = Math.atan2(nearestEnemy.y - this.y, nearestEnemy.x - this.x);
     } else {
@@ -123,7 +124,7 @@ class Fighter {
       else return;
     }
 
-    // 2. Nana Machine Gun Execution ("뚜루루룰루")
+    // 1. Nana Machine Gun Execution ("뚜루루룰루")
     if (this.isMachineGunning) {
       this.machineGunTimer -= effDt;
       this.machineGunNextShot -= effDt;
@@ -134,10 +135,10 @@ class Fighter {
         this.muzzleFlashTimer = 0.06;
 
         if (nearestEnemy && skillManager) {
-          const spread = (Math.random() - 0.5) * 0.2;
+          const spread = (Math.random() - 0.5) * 0.22;
           const shotAngle = this.aimAngle + spread;
-          const gunTipX = this.x + Math.cos(this.aimAngle) * 36;
-          const gunTipY = this.y + Math.sin(this.aimAngle) * 36;
+          const gunTipX = this.x + Math.cos(this.aimAngle) * 38;
+          const gunTipY = this.y + Math.sin(this.aimAngle) * 38;
 
           skillManager.spawnRapidBullet(this, gunTipX, gunTipY, shotAngle, particleSystem);
         }
@@ -152,28 +153,26 @@ class Fighter {
       }
     }
 
-    // 3. Shibuki Fox Transformation State & Aggressive Dash
+    // 2. Shibuki Fox Form & Aggressive Dash
     if (this.isFoxTransformed) {
       this.foxTransformTimer -= effDt;
       this.scratchCooldown = Math.max(0, this.scratchCooldown - effDt);
       this.foxDashCooldown -= effDt;
       this.radius = this.baseRadius * 1.35;
 
-      // Periodic aggressive Dash towards Nana during fox form
       if (this.foxDashCooldown <= 0 && nearestEnemy) {
-        this.foxDashCooldown = 1.4; // Dash every 1.4s
+        this.foxDashCooldown = 1.3;
         const dashAngle = Math.atan2(nearestEnemy.y - this.y, nearestEnemy.x - this.x);
         const dashSpeed = this.baseSpeed * 2.2;
         this.vx = Math.cos(dashAngle) * dashSpeed;
         this.vy = Math.sin(dashAngle) * dashSpeed;
 
         if (particleSystem) {
-          particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 50, 4);
-          particleSystem.spawnDamageText(this.x, this.y - 10, '대쉬!', 'buff', '#c084fc');
+          particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 55, 4);
+          particleSystem.spawnDamageText(this.x, this.y - 12, '대쉬!', 'buff', '#c084fc');
         }
       }
 
-      // Fox trail sparks
       if (particleSystem && Math.random() < 0.4) {
         particleSystem.spawnSparks(this.x + (Math.random() - 0.5) * 20, this.y + (Math.random() - 0.5) * 20, '#c084fc', 2);
       }
@@ -190,7 +189,7 @@ class Fighter {
       this.radius = this.baseRadius;
     }
 
-    // 4. Shibuki Delayed Horns Queue ("똑, 똑")
+    // 3. Shibuki Horn Queue ("똑, 똑")
     if (this.pendingHorns.length > 0) {
       for (let i = this.pendingHorns.length - 1; i >= 0; i--) {
         const item = this.pendingHorns[i];
@@ -204,11 +203,10 @@ class Fighter {
       }
     }
 
-    // 5. Skill Cooldowns & Auto-Casting
+    // 4. Skill Cooldowns & Auto-Casting
     this.skill1Timer += effDt;
     this.ultTimer += effDt;
 
-    // Normal Skill Auto-Cast
     if (this.skill1Timer >= this.skill1MaxCd) {
       if (nearestEnemy) {
         this.triggerSkill1(nearestEnemy, skillManager, soundEngine, particleSystem);
@@ -216,7 +214,6 @@ class Fighter {
       }
     }
 
-    // Ultimate Auto-Cast
     if (this.ultTimer >= this.ultMaxCd) {
       if (nearestEnemy) {
         this.triggerUltimate(allFighters, skillManager, soundEngine, particleSystem, arena, skillPauseEnabled);
@@ -224,7 +221,7 @@ class Fighter {
       }
     }
 
-    // 6. Physics Movement
+    // 5. Movement
     const targetSpeed = this.isFoxTransformed ? this.baseSpeed * 1.6 : this.baseSpeed;
     const currentSpeed = Math.hypot(this.vx, this.vy);
 
@@ -241,7 +238,7 @@ class Fighter {
     this.x += this.vx * speedMultiplier;
     this.y += this.vy * speedMultiplier;
 
-    // 7. 4-Corner Arena Wall Bounce
+    // 6. 1:1 Square Arena Bounce
     if (arena) {
       if (this.x - this.radius <= arena.left) {
         this.x = arena.left + this.radius;
@@ -265,19 +262,18 @@ class Fighter {
     }
   }
 
-  // Skill 1 (Normal Skill)
   triggerSkill1(enemy, skillManager, soundEngine, particleSystem) {
     if (!skillManager || !enemy) return;
 
     if (particleSystem) {
-      particleSystem.spawnDamageText(this.x, this.y - 12, this.skill1Name, 'skill', this.color);
-      particleSystem.spawnShockwave(this.x, this.y, this.glowColor, 35, 2);
+      particleSystem.spawnDamageText(this.x, this.y - 20, this.skill1Name, 'skill', this.color);
+      particleSystem.spawnShockwave(this.x, this.y, this.glowColor, 40, 2);
     }
 
     if (this.id === 'nana') {
       this.muzzleFlashTimer = 0.15;
-      const gunTipX = this.x + Math.cos(this.aimAngle) * 36;
-      const gunTipY = this.y + Math.sin(this.aimAngle) * 36;
+      const gunTipX = this.x + Math.cos(this.aimAngle) * 38;
+      const gunTipY = this.y + Math.sin(this.aimAngle) * 38;
       skillManager.spawnHeavyBullet(this, gunTipX, gunTipY, this.aimAngle, particleSystem);
     } else if (this.id === 'shibuki') {
       skillManager.spawnShibukiHorn(this, enemy, this.hornImg, particleSystem, 1);
@@ -285,7 +281,6 @@ class Fighter {
     }
   }
 
-  // Ultimate Skill
   triggerUltimate(allFighters, skillManager, soundEngine, particleSystem, arena, skillPauseEnabled = true) {
     if (this.isDead || !skillManager) return;
 
@@ -295,10 +290,9 @@ class Fighter {
     if (particleSystem) {
       particleSystem.shake(12);
       particleSystem.spawnShockwave(this.x, this.y, this.glowColor, 100, 6);
-      particleSystem.spawnDamageText(this.x, this.y - 18, `ULT: ${this.ultName}`, 'ult', '#ffd700');
+      particleSystem.spawnDamageText(this.x, this.y - 24, `ULT: ${this.ultName}`, 'ult', '#ffd700');
     }
 
-    // Cutin Banner Event
     window.dispatchEvent(new CustomEvent('fighter-ult-cutin', {
       detail: {
         fighter: this,
@@ -314,13 +308,11 @@ class Fighter {
       this.machineGunNextShot = 0;
       this.machineGunBulletsLeft = 16;
     } else if (this.id === 'shibuki') {
-      // 1. Transform into Kaengkaengi Fox
       this.isFoxTransformed = true;
       this.foxTransformTimer = this.foxMaxDuration;
       this.invulnerableTimer = 1.0;
       this.foxDashCooldown = 1.2;
 
-      // 2. INSTANT HIGH-SPEED DASH DIRECTLY AT ENEMY!
       if (enemy) {
         const dashAngle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
         const dashSpeed = this.baseSpeed * 2.8;
@@ -335,7 +327,6 @@ class Fighter {
     }
   }
 
-  // Kaengkaengi Fox Contact Scratch Damage
   applyFoxScratch(enemy, particleSystem) {
     if (!this.isFoxTransformed || this.scratchCooldown > 0 || !enemy || enemy.isDead) return;
 
@@ -399,7 +390,7 @@ class Fighter {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // 1. Fox Form Render (Shibuki Kaengkaengi)
+    // 1. Fox Form Render
     if (this.isFoxTransformed) {
       ctx.shadowBlur = 25;
       ctx.shadowColor = '#c084fc';
@@ -416,22 +407,22 @@ class Fighter {
       }
 
     } else {
-      // 2. Normal Character Avatar Rendering
-      ctx.shadowBlur = 12;
+      // 2. Normal Character Avatar Render
+      ctx.shadowBlur = 14;
       ctx.shadowColor = this.glowColor;
 
-      // Base Body Circle
+      // Base Body
       ctx.fillStyle = '#171926';
       ctx.beginPath();
       ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
       ctx.fill();
 
-      // Colored Outer Border Ring
-      ctx.lineWidth = 3.5;
+      // Border Ring
+      ctx.lineWidth = 4;
       ctx.strokeStyle = this.color;
       ctx.stroke();
 
-      // Perfectly Centered Face Avatar
+      // Perfectly Centered Avatar
       if (this.avatarImg && this.avatarImg.complete && this.avatarImg.naturalWidth > 0) {
         ctx.save();
         ctx.beginPath();
@@ -440,13 +431,13 @@ class Fighter {
         ctx.drawImage(this.avatarImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
         ctx.restore();
       } else {
-        ctx.font = '24px sans-serif';
+        ctx.font = '26px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(this.emoji, 0, 2);
       }
 
-      // 3. Nana's Gun '사랑이' Render (Aimed at enemy from her hand)
+      // 3. Nana's Gun '사랑이' Render
       if (this.id === 'nana' && this.gunImg && this.gunImg.complete && this.gunImg.naturalWidth > 0) {
         ctx.save();
         const gunDist = this.radius * 0.8;
@@ -461,20 +452,20 @@ class Fighter {
           ctx.scale(1, -1);
         }
 
-        const gunW = 32;
-        const gunH = 26;
+        const gunW = 34;
+        const gunH = 28;
         ctx.drawImage(this.gunImg, -8, -gunH / 2, gunW, gunH);
 
-        // Muzzle Flash Effect when shooting
+        // Muzzle Flash
         if (this.muzzleFlashTimer > 0) {
           ctx.fillStyle = '#ffd700';
           ctx.beginPath();
-          ctx.arc(26, 0, 10, 0, Math.PI * 2);
+          ctx.arc(28, 0, 10, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.fillStyle = '#ff69b4';
           ctx.beginPath();
-          ctx.arc(26, 0, 6, 0, Math.PI * 2);
+          ctx.arc(28, 0, 6, 0, Math.PI * 2);
           ctx.fill();
         }
 
@@ -482,45 +473,69 @@ class Fighter {
       }
     }
 
-    // 4. Cooldown Progress Ring (Ult Ready Glow)
+    // 4. Cooldown Progress Ring
     const ultRatio = Math.min(1.0, this.ultTimer / this.ultMaxCd);
     if (ultRatio < 1.0) {
       const ultAngle = ultRatio * Math.PI * 2;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 3.5;
       ctx.strokeStyle = '#eab308';
       ctx.beginPath();
-      ctx.arc(0, 0, this.radius + 4, -Math.PI / 2, -Math.PI / 2 + ultAngle);
+      ctx.arc(0, 0, this.radius + 5, -Math.PI / 2, -Math.PI / 2 + ultAngle);
       ctx.stroke();
     } else {
-      ctx.lineWidth = 3.5;
+      ctx.lineWidth = 4;
       ctx.strokeStyle = '#ffd700';
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = 14;
       ctx.shadowColor = '#ffd700';
       ctx.beginPath();
-      ctx.arc(0, 0, this.radius + 4, 0, Math.PI * 2);
+      ctx.arc(0, 0, this.radius + 5, 0, Math.PI * 2);
       ctx.stroke();
     }
 
-    // 5. Overhead Mini Health Bar
-    const hpBarWidth = 48;
-    const hpBarHeight = 5;
-    const hpY = -this.radius - 12;
+    // 5. Overhead Large Health Bar & Exact HP Number
+    const hpBarWidth = 56;
+    const hpBarHeight = 7;
+    const hpY = -this.radius - 14;
 
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
     ctx.fillRect(-hpBarWidth / 2, hpY, hpBarWidth, hpBarHeight);
 
     const hpRatio = Math.max(0, this.hp / this.maxHp);
     ctx.fillStyle = hpRatio > 0.5 ? '#22c55e' : hpRatio > 0.25 ? '#eab308' : '#ef4444';
     ctx.fillRect(-hpBarWidth / 2, hpY, hpBarWidth * hpRatio, hpBarHeight);
 
-    // 6. Name Label
-    ctx.font = "800 12px 'Noto Sans KR', sans-serif";
+    // 6. Reels-Style Visible Cooldowns & Big Bold Character Name
+    // Name (Bold 15px with thick black outline)
+    ctx.font = "900 15px 'Black Han Sans', 'Noto Sans KR', sans-serif";
     ctx.textAlign = 'center';
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
-    ctx.strokeText(this.name, 0, this.radius + 15);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#000000';
+    ctx.strokeText(this.name, 0, this.radius + 18);
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(this.name, 0, this.radius + 15);
+    ctx.fillText(this.name, 0, this.radius + 18);
+
+    // Reels-Style Skill 1 & Ult Badges below Name
+    const s1Remaining = Math.max(0, this.skill1MaxCd - this.skill1Timer);
+    const ultRemainingPercent = Math.min(100, Math.floor((this.ultTimer / this.ultMaxCd) * 100));
+
+    ctx.font = "800 12px 'Noto Sans KR', sans-serif";
+    ctx.lineWidth = 3;
+
+    // Skill 1 Status Badge
+    let s1Text = s1Remaining <= 0 ? '🔥 스킬 ON' : `⏱️ ${s1Remaining.toFixed(1)}s`;
+    let s1Color = s1Remaining <= 0 ? '#4ade80' : '#fbbf24';
+    ctx.strokeStyle = '#000000';
+    ctx.strokeText(s1Text, 0, this.radius + 33);
+    ctx.fillStyle = s1Color;
+    ctx.fillText(s1Text, 0, this.radius + 33);
+
+    // Ult Status Badge
+    let ultText = ultRemainingPercent >= 100 ? '🌟 궁극기 READY' : `⚡ 궁: ${ultRemainingPercent}%`;
+    let ultColor = ultRemainingPercent >= 100 ? '#ffd700' : '#38bdf8';
+    ctx.strokeStyle = '#000000';
+    ctx.strokeText(ultText, 0, this.radius + 47);
+    ctx.fillStyle = ultColor;
+    ctx.fillText(ultText, 0, this.radius + 47);
 
     ctx.restore();
   }
