@@ -92,8 +92,8 @@ class PhysicsEngine {
             f2.clashCooldown = 0.45;
 
             const clashDmg = Math.max(4, Math.floor(Math.hypot(f1.vx - f2.vx, f1.vy - f2.vy) * 0.8));
-            f1.takeDamage(clashDmg, f2, particleSystem, 'normal');
-            f2.takeDamage(clashDmg, f1, particleSystem, 'normal');
+            f1.takeDamage(clashDmg, f2, particleSystem, 'normal', skillManager);
+            f2.takeDamage(clashDmg, f1, particleSystem, 'normal', skillManager);
 
             if (particleSystem) {
               const mx = (f1.x + f2.x) / 2, my = (f1.y + f2.y) / 2;

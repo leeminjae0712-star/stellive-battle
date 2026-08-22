@@ -126,7 +126,7 @@ class Fighter {
           const tipY = this.y + Math.sin(this.aimAngle) * 50;
           skillManager.spawnRapidBullet(this, tipX, tipY, shotAngle, particleSystem);
         }
-        if (particleSystem) particleSystem.shake(1.5);
+        if (particleSystem) particleSystem.shake(1.2);
       }
 
       if (this.machineGunTimer <= 0 || this.machineGunBulletsLeft <= 0) {
@@ -149,7 +149,7 @@ class Fighter {
         this.vy = Math.sin(dashAngle) * dashSpeed;
 
         if (particleSystem) {
-          particleSystem.spawnSparks(this.x, this.y, '#c084fc', 6, 3);
+          particleSystem.spawnSparks(this.x, this.y, '#c084fc', 5, 2.5);
         }
       }
 
@@ -179,13 +179,13 @@ class Fighter {
     if (skillManager && skillManager.isTimeStopped && skillManager.timeStopOwner === this) {
       if (nearestEnemy) {
         const dist = Math.hypot(nearestEnemy.x - this.x, nearestEnemy.y - this.y);
-        if (dist < 130 && Math.random() < 0.25) {
+        if (dist < 130 && Math.random() < 0.3) {
           this.swordSlashTimer = 0.25;
           try { if (soundEngine) soundEngine.playSlash(); } catch(e) {}
           if (particleSystem) {
-            particleSystem.spawnSlash(nearestEnemy.x, nearestEnemy.y, Math.random() * Math.PI, '#10b981', 60);
+            particleSystem.spawnSlash(nearestEnemy.x, nearestEnemy.y, Math.random() * Math.PI, '#10b981', 50);
           }
-          nearestEnemy.takeDamage(45, this, particleSystem, 'crit');
+          nearestEnemy.takeDamage(45, this, particleSystem, 'crit', skillManager);
         }
       }
     }
@@ -224,7 +224,7 @@ class Fighter {
       skillManager.spawnHeavyBullet(this, tipX, tipY, this.aimAngle, particleSystem);
       if (particleSystem) {
         particleSystem.spawnDamageText(this.x, this.y - 28, '💖 ' + this.skill1Name, 'skill', this.color);
-        particleSystem.shake(4);
+        particleSystem.shake(3);
       }
 
     } else if (this.id === 'shibuki') {
@@ -249,7 +249,7 @@ class Fighter {
 
     try { if (soundEngine) soundEngine.playUlt(); } catch(e) {}
     if (particleSystem) {
-      particleSystem.shake(10);
+      particleSystem.shake(8);
       particleSystem.spawnDamageText(this.x, this.y - 32, `★ ${this.ultName} ★`, 'ult', '#ffd700');
     }
 
@@ -297,16 +297,17 @@ class Fighter {
 
     if (particleSystem) {
       particleSystem.spawnScratch(enemy.x, enemy.y, '#c084fc');
-      particleSystem.shake(3);
+      particleSystem.shake(2);
     }
   }
 
-  takeDamage(amount, attacker, particleSystem, type = 'normal') {
+  takeDamage(amount, attacker, particleSystem, type = 'normal', skillManager = null) {
     if (this.isDead || this.invulnerableTimer > 0) return 0;
 
     let finalDmg = Math.max(3, Math.floor(amount - this.def * 0.12));
 
-    if (attacker && attacker.id === 'riko' && window.gameApp && window.gameApp.skills && window.gameApp.skills.isTimeStopped) {
+    const isAttackerRikoTimeStopped = attacker && attacker.id === 'riko' && skillManager && skillManager.isTimeStopped;
+    if (isAttackerRikoTimeStopped) {
       finalDmg = Math.floor(finalDmg * 1.8);
     }
 
@@ -326,8 +327,8 @@ class Fighter {
   die(particleSystem) {
     this.isDead = true;
     if (particleSystem) {
-      particleSystem.shake(12);
-      particleSystem.spawnSparks(this.x, this.y, '#ffffff', 14, 4);
+      particleSystem.shake(10);
+      particleSystem.spawnSparks(this.x, this.y, '#ffffff', 12, 3.5);
       particleSystem.spawnDamageText(this.x, this.y, '💀 K.O.', 'crit', '#ef4444');
     }
   }

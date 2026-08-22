@@ -34,7 +34,7 @@ class SkillManager {
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       radius: 16,
-      drawSize: 42,
+      drawSize: 40,
       damage: 160,
       color: '#ff69b4',
       glowColor: '#f43f5e',
@@ -45,7 +45,7 @@ class SkillManager {
     });
 
     if (particleSystem) {
-      particleSystem.spawnSparks(startX, startY, '#ff69b4', 6, 3);
+      particleSystem.spawnSparks(startX, startY, '#ff69b4', 5, 3);
     }
   }
 
@@ -162,7 +162,7 @@ class SkillManager {
         this.timeStopOwner = null;
         try { if (soundEngine) soundEngine.playTimeResume(); } catch(e) {}
         if (particleSystem) {
-          particleSystem.shake(6);
+          particleSystem.shake(5);
           particleSystem.spawnDamageText(arena.cx, arena.cy, '✨ 시간 재개!', 'buff', '#10b981');
         }
       }
@@ -186,17 +186,17 @@ class SkillManager {
           // Impact
           try { if (soundEngine) soundEngine.playSwordDrop(); } catch(e) {}
           if (particleSystem) {
-            particleSystem.shake(8);
-            particleSystem.spawnSparks(sw.x, sw.y, '#10b981', 16, 5);
+            particleSystem.shake(7);
+            particleSystem.spawnSparks(sw.x, sw.y, '#10b981', 12, 4);
           }
 
           // Full Screen Map Attack: Hits all enemies on the map!
           for (const enemy of allFighters) {
             if (enemy === sw.owner || enemy.isDead) continue;
-            enemy.takeDamage(sw.impactDmg, sw.owner, particleSystem, 'crit');
+            enemy.takeDamage(sw.impactDmg, sw.owner, particleSystem, 'crit', this);
 
             if (particleSystem) {
-              particleSystem.spawnSlash(enemy.x, enemy.y, Math.PI / 4, '#10b981', 50);
+              particleSystem.spawnSlash(enemy.x, enemy.y, Math.PI / 4, '#10b981', 45);
             }
           }
         }
@@ -209,23 +209,23 @@ class SkillManager {
           sw.pulseTimer = sw.pulseInterval;
 
           if (particleSystem) {
-            particleSystem.spawnSparks(sw.x, sw.y, '#10b981', 6, 3);
+            particleSystem.spawnSparks(sw.x, sw.y, '#10b981', 5, 2.5);
           }
 
           // Hits ALL enemies anywhere across the map
           for (const enemy of allFighters) {
             if (enemy === sw.owner || enemy.isDead) continue;
-            enemy.takeDamage(sw.pulseDmg, sw.owner, particleSystem, 'normal');
+            enemy.takeDamage(sw.pulseDmg, sw.owner, particleSystem, 'normal', this);
 
             if (particleSystem) {
-              particleSystem.spawnSlash(enemy.x, enemy.y, Math.random() * Math.PI, '#10b981', 40);
+              particleSystem.spawnSlash(enemy.x, enemy.y, Math.random() * Math.PI, '#10b981', 35);
             }
           }
         }
 
         if (sw.duration <= 0) {
           if (particleSystem) {
-            particleSystem.spawnSparks(sw.x, sw.y, '#10b981', 12, 4);
+            particleSystem.spawnSparks(sw.x, sw.y, '#10b981', 10, 3);
           }
           this.swordDrops.splice(i, 1);
         }
@@ -259,15 +259,15 @@ class SkillManager {
         if (dist <= enemy.radius + p.radius) {
           hit = true;
           const isCrit = p.type === 'heavy_bullet' || Math.random() < 0.2;
-          enemy.takeDamage(p.damage, p.owner, particleSystem, isCrit ? 'crit' : 'normal');
+          enemy.takeDamage(p.damage, p.owner, particleSystem, isCrit ? 'crit' : 'normal', this);
 
           try { if (soundEngine) soundEngine.playHit(); } catch(e) {}
           if (particleSystem) {
             if (p.type === 'heavy_bullet') {
               particleSystem.shake(5);
-              particleSystem.spawnSparks(p.x, p.y, '#ff69b4', 10, 4);
+              particleSystem.spawnSparks(p.x, p.y, '#ff69b4', 8, 3.5);
             } else if (p.type === 'horn') {
-              particleSystem.spawnSlash(p.x, p.y, p.angle, '#c084fc', 40);
+              particleSystem.spawnSlash(p.x, p.y, p.angle, '#c084fc', 35);
               particleSystem.spawnSparks(p.x, p.y, '#c084fc', 4, 2);
             } else {
               particleSystem.spawnSparks(p.x, p.y, '#ff69b4', 3, 2);
@@ -366,22 +366,11 @@ class SkillManager {
       ctx.restore();
     }
 
-    // ── 3. Time Stop Clean Dark Filter ──
+    // ── 3. Time Stop Subtle Filter ──
     if (this.isTimeStopped) {
       ctx.save();
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
       ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-      const cx = ctx.canvas.width / 2;
-      const cy = ctx.canvas.height / 2;
-      const r = Math.min(cx, cy) * 0.55;
-
-      ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.stroke();
-
       ctx.restore();
     }
 

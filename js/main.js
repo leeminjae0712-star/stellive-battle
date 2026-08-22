@@ -379,9 +379,9 @@ class GameApp {
       const dt = Math.min(0.04, (currentTime - this.lastTime) / 1000);
       this.lastTime = currentTime;
 
-      if (this.isPlaying && !this.isPaused) {
-        const effSpeed = this.speedMultiplier;
+      const effSpeed = this.speedMultiplier;
 
+      if (this.isPlaying && !this.isPaused) {
         // 1. Update Fighters
         for (const f of this.fighters) {
           f.update(dt, this.arena, this.fighters, this.skills, this.audio, this.particles, effSpeed);
@@ -395,6 +395,11 @@ class GameApp {
 
         // 4. Check Win Condition
         this.checkGameEnd();
+      }
+
+      // 5. CRITICAL BUG FIX: ALWAYS UPDATE PARTICLES SO NUMBERS & TEXTS DECAY AND DISAPPEAR!
+      if (this.particles) {
+        this.particles.update(dt, effSpeed);
       }
 
       // Render
