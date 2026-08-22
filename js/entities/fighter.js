@@ -1,7 +1,7 @@
 ﻿/**
  * Fighter Entity Class
- * Specialized for Hanako Nana & Tenko Shibuki with Reels-style visible cooldowns,
- * large bold high-contrast fonts, and 1:1 square arena physics.
+ * Clean, bold character rendering with large 42px radius,
+ * prominent gun & fox sprites, and no cluttered sub-text.
  */
 
 class Fighter {
@@ -17,10 +17,10 @@ class Fighter {
     this.glowColor = config.glowColor || this.color;
     this.emoji = config.emoji || '⭐';
 
-    // Position & Physics
+    // Position & Physics (Large, prominent character tokens)
     this.x = x;
     this.y = y;
-    this.baseRadius = 34; // Large, clear circular avatar
+    this.baseRadius = 42; // Large character avatar
     this.radius = this.baseRadius;
     this.mass = 1.0;
 
@@ -32,7 +32,7 @@ class Fighter {
     // Combat Stats
     this.maxHp = config.hp || 1000;
     this.hp = this.maxHp;
-    this.atk = config.atk || 50;
+    this.atk = config.atk || 54;
     this.def = config.def || 16;
     this.team = team;
     this.isDead = false;
@@ -48,7 +48,7 @@ class Fighter {
     this.ultMaxCd = config.ultCooldown || 13.0;
     this.ultTimer = 0;
 
-    // Nana Machine Gun ("뚜루루룰루")
+    // Nana Machine Gun ("사랑이 난사")
     this.aimAngle = initialAngle;
     this.muzzleFlashTimer = 0;
     this.isMachineGunning = false;
@@ -124,7 +124,7 @@ class Fighter {
       else return;
     }
 
-    // 1. Nana Machine Gun Execution ("뚜루루룰루")
+    // 1. Nana Machine Gun Execution ("사랑이 난사")
     if (this.isMachineGunning) {
       this.machineGunTimer -= effDt;
       this.machineGunNextShot -= effDt;
@@ -137,8 +137,8 @@ class Fighter {
         if (nearestEnemy && skillManager) {
           const spread = (Math.random() - 0.5) * 0.22;
           const shotAngle = this.aimAngle + spread;
-          const gunTipX = this.x + Math.cos(this.aimAngle) * 38;
-          const gunTipY = this.y + Math.sin(this.aimAngle) * 38;
+          const gunTipX = this.x + Math.cos(this.aimAngle) * 48;
+          const gunTipY = this.y + Math.sin(this.aimAngle) * 48;
 
           skillManager.spawnRapidBullet(this, gunTipX, gunTipY, shotAngle, particleSystem);
         }
@@ -153,7 +153,7 @@ class Fighter {
       }
     }
 
-    // 2. Shibuki Fox Form & Aggressive Dash
+    // 2. Shibuki Fox Form & Aggressive Dash ("캥캥이")
     if (this.isFoxTransformed) {
       this.foxTransformTimer -= effDt;
       this.scratchCooldown = Math.max(0, this.scratchCooldown - effDt);
@@ -163,12 +163,12 @@ class Fighter {
       if (this.foxDashCooldown <= 0 && nearestEnemy) {
         this.foxDashCooldown = 1.3;
         const dashAngle = Math.atan2(nearestEnemy.y - this.y, nearestEnemy.x - this.x);
-        const dashSpeed = this.baseSpeed * 2.2;
+        const dashSpeed = this.baseSpeed * 2.3;
         this.vx = Math.cos(dashAngle) * dashSpeed;
         this.vy = Math.sin(dashAngle) * dashSpeed;
 
         if (particleSystem) {
-          particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 55, 4);
+          particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 60, 4);
           particleSystem.spawnDamageText(this.x, this.y - 12, '대쉬!', 'buff', '#c084fc');
         }
       }
@@ -181,7 +181,7 @@ class Fighter {
         this.isFoxTransformed = false;
         this.radius = this.baseRadius;
         if (particleSystem) {
-          particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 60, 4);
+          particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 70, 4);
           particleSystem.spawnDamageText(this.x, this.y, '변신 해제!', 'buff', '#e2e8f0');
         }
       }
@@ -189,7 +189,7 @@ class Fighter {
       this.radius = this.baseRadius;
     }
 
-    // 3. Shibuki Horn Queue ("똑, 똑")
+    // 3. Shibuki Horn Queue ("뿔 발사" 똑, 똑)
     if (this.pendingHorns.length > 0) {
       for (let i = this.pendingHorns.length - 1; i >= 0; i--) {
         const item = this.pendingHorns[i];
@@ -221,7 +221,7 @@ class Fighter {
       }
     }
 
-    // 5. Movement
+    // 5. Physics Movement
     const targetSpeed = this.isFoxTransformed ? this.baseSpeed * 1.6 : this.baseSpeed;
     const currentSpeed = Math.hypot(this.vx, this.vy);
 
@@ -238,26 +238,26 @@ class Fighter {
     this.x += this.vx * speedMultiplier;
     this.y += this.vy * speedMultiplier;
 
-    // 6. 1:1 Square Arena Bounce
+    // 6. 1:1 Square Arena Wall Bounce
     if (arena) {
       if (this.x - this.radius <= arena.left) {
         this.x = arena.left + this.radius;
         this.vx = Math.abs(this.vx);
-        if (particleSystem) particleSystem.spawnSparks(this.x, this.y, this.color, 3, 2);
+        if (particleSystem) particleSystem.spawnSparks(this.x, this.y, this.color, 4, 3);
       } else if (this.x + this.radius >= arena.right) {
         this.x = arena.right - this.radius;
         this.vx = -Math.abs(this.vx);
-        if (particleSystem) particleSystem.spawnSparks(this.x, this.y, this.color, 3, 2);
+        if (particleSystem) particleSystem.spawnSparks(this.x, this.y, this.color, 4, 3);
       }
 
       if (this.y - this.radius <= arena.top) {
         this.y = arena.top + this.radius;
         this.vy = Math.abs(this.vy);
-        if (particleSystem) particleSystem.spawnSparks(this.x, this.y, this.color, 3, 2);
+        if (particleSystem) particleSystem.spawnSparks(this.x, this.y, this.color, 4, 3);
       } else if (this.y + this.radius >= arena.bottom) {
         this.y = arena.bottom - this.radius;
         this.vy = -Math.abs(this.vy);
-        if (particleSystem) particleSystem.spawnSparks(this.x, this.y, this.color, 3, 2);
+        if (particleSystem) particleSystem.spawnSparks(this.x, this.y, this.color, 4, 3);
       }
     }
   }
@@ -266,14 +266,14 @@ class Fighter {
     if (!skillManager || !enemy) return;
 
     if (particleSystem) {
-      particleSystem.spawnDamageText(this.x, this.y - 20, this.skill1Name, 'skill', this.color);
-      particleSystem.spawnShockwave(this.x, this.y, this.glowColor, 40, 2);
+      particleSystem.spawnDamageText(this.x, this.y - 24, this.skill1Name, 'skill', this.color);
+      particleSystem.spawnShockwave(this.x, this.y, this.glowColor, 45, 2);
     }
 
     if (this.id === 'nana') {
-      this.muzzleFlashTimer = 0.15;
-      const gunTipX = this.x + Math.cos(this.aimAngle) * 38;
-      const gunTipY = this.y + Math.sin(this.aimAngle) * 38;
+      this.muzzleFlashTimer = 0.18;
+      const gunTipX = this.x + Math.cos(this.aimAngle) * 48;
+      const gunTipY = this.y + Math.sin(this.aimAngle) * 48;
       skillManager.spawnHeavyBullet(this, gunTipX, gunTipY, this.aimAngle, particleSystem);
     } else if (this.id === 'shibuki') {
       skillManager.spawnShibukiHorn(this, enemy, this.hornImg, particleSystem, 1);
@@ -288,9 +288,9 @@ class Fighter {
 
     if (soundEngine) soundEngine.playUlt();
     if (particleSystem) {
-      particleSystem.shake(12);
-      particleSystem.spawnShockwave(this.x, this.y, this.glowColor, 100, 6);
-      particleSystem.spawnDamageText(this.x, this.y - 24, `ULT: ${this.ultName}`, 'ult', '#ffd700');
+      particleSystem.shake(14);
+      particleSystem.spawnShockwave(this.x, this.y, this.glowColor, 120, 6);
+      particleSystem.spawnDamageText(this.x, this.y - 28, `ULT: ${this.ultName}`, 'ult', '#ffd700');
     }
 
     window.dispatchEvent(new CustomEvent('fighter-ult-cutin', {
@@ -321,7 +321,7 @@ class Fighter {
       }
 
       if (particleSystem) {
-        particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 130, 8);
+        particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 140, 8);
         particleSystem.spawnDamageText(this.x, this.y, '🦊 캥캥이 폭풍 대쉬!', 'buff', '#a855f7');
       }
     }
@@ -418,7 +418,7 @@ class Fighter {
       ctx.fill();
 
       // Border Ring
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 4.5;
       ctx.strokeStyle = this.color;
       ctx.stroke();
 
@@ -431,16 +431,16 @@ class Fighter {
         ctx.drawImage(this.avatarImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
         ctx.restore();
       } else {
-        ctx.font = '26px sans-serif';
+        ctx.font = '32px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(this.emoji, 0, 2);
       }
 
-      // 3. Nana's Gun '사랑이' Render
+      // 3. Nana's Gun '사랑이' Render (Large & Prominent)
       if (this.id === 'nana' && this.gunImg && this.gunImg.complete && this.gunImg.naturalWidth > 0) {
         ctx.save();
-        const gunDist = this.radius * 0.8;
+        const gunDist = this.radius * 0.85;
         const gunX = Math.cos(this.aimAngle) * gunDist;
         const gunY = Math.sin(this.aimAngle) * gunDist;
 
@@ -452,20 +452,20 @@ class Fighter {
           ctx.scale(1, -1);
         }
 
-        const gunW = 34;
-        const gunH = 28;
-        ctx.drawImage(this.gunImg, -8, -gunH / 2, gunW, gunH);
+        const gunW = 44;
+        const gunH = 36;
+        ctx.drawImage(this.gunImg, -10, -gunH / 2, gunW, gunH);
 
         // Muzzle Flash
         if (this.muzzleFlashTimer > 0) {
           ctx.fillStyle = '#ffd700';
           ctx.beginPath();
-          ctx.arc(28, 0, 10, 0, Math.PI * 2);
+          ctx.arc(34, 0, 14, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.fillStyle = '#ff69b4';
           ctx.beginPath();
-          ctx.arc(28, 0, 6, 0, Math.PI * 2);
+          ctx.arc(34, 0, 8, 0, Math.PI * 2);
           ctx.fill();
         }
 
@@ -477,65 +477,41 @@ class Fighter {
     const ultRatio = Math.min(1.0, this.ultTimer / this.ultMaxCd);
     if (ultRatio < 1.0) {
       const ultAngle = ultRatio * Math.PI * 2;
-      ctx.lineWidth = 3.5;
+      ctx.lineWidth = 4;
       ctx.strokeStyle = '#eab308';
       ctx.beginPath();
-      ctx.arc(0, 0, this.radius + 5, -Math.PI / 2, -Math.PI / 2 + ultAngle);
+      ctx.arc(0, 0, this.radius + 6, -Math.PI / 2, -Math.PI / 2 + ultAngle);
       ctx.stroke();
     } else {
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 4.5;
       ctx.strokeStyle = '#ffd700';
-      ctx.shadowBlur = 14;
+      ctx.shadowBlur = 16;
       ctx.shadowColor = '#ffd700';
       ctx.beginPath();
-      ctx.arc(0, 0, this.radius + 5, 0, Math.PI * 2);
+      ctx.arc(0, 0, this.radius + 6, 0, Math.PI * 2);
       ctx.stroke();
     }
 
-    // 5. Overhead Large Health Bar & Exact HP Number
-    const hpBarWidth = 56;
-    const hpBarHeight = 7;
-    const hpY = -this.radius - 14;
+    // 5. Overhead Large Health Bar
+    const hpBarWidth = 64;
+    const hpBarHeight = 8;
+    const hpY = -this.radius - 16;
 
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
     ctx.fillRect(-hpBarWidth / 2, hpY, hpBarWidth, hpBarHeight);
 
     const hpRatio = Math.max(0, this.hp / this.maxHp);
     ctx.fillStyle = hpRatio > 0.5 ? '#22c55e' : hpRatio > 0.25 ? '#eab308' : '#ef4444';
     ctx.fillRect(-hpBarWidth / 2, hpY, hpBarWidth * hpRatio, hpBarHeight);
 
-    // 6. Reels-Style Visible Cooldowns & Big Bold Character Name
-    // Name (Bold 15px with thick black outline)
-    ctx.font = "900 15px 'Black Han Sans', 'Noto Sans KR', sans-serif";
+    // 6. Clean Big Bold Character Name Tag Only (No clutter below!)
+    ctx.font = "900 17px 'Black Han Sans', 'Noto Sans KR', sans-serif";
     ctx.textAlign = 'center';
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 5;
     ctx.strokeStyle = '#000000';
-    ctx.strokeText(this.name, 0, this.radius + 18);
+    ctx.strokeText(this.name, 0, this.radius + 22);
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(this.name, 0, this.radius + 18);
-
-    // Reels-Style Skill 1 & Ult Badges below Name
-    const s1Remaining = Math.max(0, this.skill1MaxCd - this.skill1Timer);
-    const ultRemainingPercent = Math.min(100, Math.floor((this.ultTimer / this.ultMaxCd) * 100));
-
-    ctx.font = "800 12px 'Noto Sans KR', sans-serif";
-    ctx.lineWidth = 3;
-
-    // Skill 1 Status Badge
-    let s1Text = s1Remaining <= 0 ? '🔥 스킬 ON' : `⏱️ ${s1Remaining.toFixed(1)}s`;
-    let s1Color = s1Remaining <= 0 ? '#4ade80' : '#fbbf24';
-    ctx.strokeStyle = '#000000';
-    ctx.strokeText(s1Text, 0, this.radius + 33);
-    ctx.fillStyle = s1Color;
-    ctx.fillText(s1Text, 0, this.radius + 33);
-
-    // Ult Status Badge
-    let ultText = ultRemainingPercent >= 100 ? '🌟 궁극기 READY' : `⚡ 궁: ${ultRemainingPercent}%`;
-    let ultColor = ultRemainingPercent >= 100 ? '#ffd700' : '#38bdf8';
-    ctx.strokeStyle = '#000000';
-    ctx.strokeText(ultText, 0, this.radius + 47);
-    ctx.fillStyle = ultColor;
-    ctx.fillText(ultText, 0, this.radius + 47);
+    ctx.fillText(this.name, 0, this.radius + 22);
 
     ctx.restore();
   }

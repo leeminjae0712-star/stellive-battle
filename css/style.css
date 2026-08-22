@@ -368,7 +368,7 @@ body {
 
 .canvas-wrapper {
   position: relative;
-  width: min(100%, 640px);
+  width: min(100%, 700px);
   aspect-ratio: 1 / 1;
   background: #0f111a;
   border: 2px solid rgba(255, 255, 255, 0.15);
@@ -512,7 +512,7 @@ body {
 
 /* 4. Control Panel */
 .control-panel {
-  width: min(100%, 640px);
+  width: min(100%, 700px);
   display: flex;
   align-items: center;
   justify-content: space-between;

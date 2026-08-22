@@ -1,133 +1,154 @@
 ﻿/**
- * Skill & Projectile Manager
- * Specialized for Nana's [Sarang-i Bullets & Machine Gun Stream] & Shibuki's [Horn Buns & Claws].
+ * Skill Manager & Projectile Engine
+ * Renders large, high-visibility projectiles for Nana's Sarang-i & Shibuki's Horns.
  */
 
 class SkillManager {
   constructor() {
     this.projectiles = [];
-    this.lasers = [];
-    this.aoeZones = [];
+    this.aoeEffects = [];
   }
 
   reset() {
     this.projectiles = [];
-    this.lasers = [];
-    this.aoeZones = [];
+    this.aoeEffects = [];
   }
 
-  // 1. Nana: Single Heavy Sarang-i Bullet
-  spawnHeavyBullet(owner, startX, startY, angle, particleSystem) {
-    const speed = 10.0;
+  // 1. Nana Normal Skill: Large glowing [사랑이] bullet
+  spawnHeavyBullet(fighter, startX, startY, angle, particleSystem) {
+    const speed = 10.5;
     this.projectiles.push({
-      owner,
-      x: startX,
-      y: startY,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      radius: 9,
-      damage: owner.atk * 1.35,
-      color: '#ff69b4',
+      id: 'sarangi_heavy',
       type: 'heavy_bullet',
-      life: 3.0,
-      isUlt: false
-    });
-
-    if (particleSystem) {
-      particleSystem.spawnSparks(startX, startY, '#ff69b4', 6, 3);
-    }
-  }
-
-  // 2. Nana: Rapid Machine Gun Bullet ("뚜루루룰루")
-  spawnRapidBullet(owner, startX, startY, angle, particleSystem) {
-    const speed = 11.5;
-    this.projectiles.push({
-      owner,
+      owner: fighter,
       x: startX,
       y: startY,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
-      radius: 6,
-      damage: owner.atk * 0.42, // Balanced rapid tick (18 shots total)
+      radius: 14,
+      drawSize: 34,
+      damage: 110,
       color: '#ff69b4',
-      type: 'rapid_bullet',
+      glowColor: '#f43f5e',
       life: 2.5,
-      isUlt: true
+      trailTimer: 0,
+      angle: angle,
+      spin: 0
     });
 
     if (particleSystem) {
-      particleSystem.spawnTrail(startX, startY, '#ff69b4', 5);
+      particleSystem.spawnShockwave(startX, startY, '#ff69b4', 45, 3);
+      particleSystem.spawnSparks(startX, startY, '#ffd700', 8, 4);
     }
   }
 
-  // 3. Shibuki: Horn Buns Projectile ("똑, 똑" sequential poke)
-  spawnShibukiHorn(owner, target, hornImg, particleSystem, hornIndex = 1) {
-    const angle = Math.atan2(target.y - owner.y, target.x - owner.x);
-    const speed = 8.5;
-
+  // 2. Nana Ultimate: Rapid stream bullet
+  spawnRapidBullet(fighter, startX, startY, angle, particleSystem) {
+    const speed = 12.0;
     this.projectiles.push({
-      owner,
-      x: owner.x,
-      y: owner.y,
+      id: 'sarangi_rapid',
+      type: 'rapid_bullet',
+      owner: fighter,
+      x: startX,
+      y: startY,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
-      currentAngle: 0,
-      rotSpeed: hornIndex === 1 ? 0.25 : -0.25,
-      radius: 12,
-      damage: owner.atk * 0.55,
-      color: '#a855f7',
-      type: 'shibuki_horn',
-      img: hornImg,
-      life: 3.0,
-      isUlt: false
+      radius: 8,
+      drawSize: 18,
+      damage: 28,
+      color: '#ff69b4',
+      glowColor: '#ffd700',
+      life: 2.0,
+      trailTimer: 0,
+      angle: angle,
+      spin: 0
     });
 
-    if (particleSystem) {
-      particleSystem.spawnSparks(owner.x, owner.y, '#a855f7', 4, 2);
+    if (particleSystem && Math.random() < 0.3) {
+      particleSystem.spawnSparks(startX, startY, '#ff69b4', 3, 2);
     }
   }
 
-  update(dt, arena, fighters, particleSystem, soundEngine, speedMultiplier = 1) {
-    const effDt = dt * speedMultiplier;
+  // 3. Shibuki Normal Skill: Large spinning Horn projectile
+  spawnShibukiHorn(fighter, target, hornImg, particleSystem, hornIndex = 1) {
+    const angle = Math.atan2(target.y - fighter.y, target.x - fighter.x) + (Math.random() - 0.5) * 0.15;
+    const speed = 9.5;
+    const spawnOffsetX = (hornIndex === 1 ? -1 : 1) * (fighter.radius * 0.5);
 
+    this.projectiles.push({
+      id: 'shibuki_horn',
+      type: 'horn',
+      owner: fighter,
+      img: hornImg,
+      x: fighter.x + spawnOffsetX,
+      y: fighter.y - fighter.radius * 0.4,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      radius: 16,
+      drawSize: 38,
+      damage: 55,
+      color: '#c084fc',
+      glowColor: '#a855f7',
+      life: 3.0,
+      trailTimer: 0,
+      angle: angle,
+      spin: 0,
+      spinSpeed: 0.25
+    });
+
+    if (particleSystem) {
+      particleSystem.spawnShockwave(fighter.x + spawnOffsetX, fighter.y, '#c084fc', 35, 2);
+      particleSystem.spawnSparks(fighter.x + spawnOffsetX, fighter.y, '#c084fc', 6, 3);
+    }
+  }
+
+  update(dt, arena, allFighters, particleSystem, soundEngine, speedMultiplier = 1) {
+    const effSpeed = speedMultiplier;
+
+    // Update Projectiles
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
+      p.x += p.vx * effSpeed;
+      p.y += p.vy * effSpeed;
+      p.life -= dt * effSpeed;
+      p.spin += (p.spinSpeed || 0.1) * effSpeed;
 
-      p.x += p.vx * speedMultiplier;
-      p.y += p.vy * speedMultiplier;
-      if (p.rotSpeed) p.currentAngle += p.rotSpeed * speedMultiplier;
-      p.life -= effDt;
-
-      // Particle Trail
-      if (particleSystem && Math.random() < 0.7) {
-        particleSystem.spawnTrail(p.x, p.y, p.color, p.radius * 0.7);
+      // Spawn Glowing Trails
+      p.trailTimer += dt * effSpeed;
+      if (p.trailTimer >= 0.04 && particleSystem) {
+        p.trailTimer = 0;
+        particleSystem.spawnTrail(p.x, p.y, p.color, p.radius * 1.2);
       }
 
-      // Check boundary hit against 4-corner arena
-      if (arena && !arena.isInside(p.x, p.y, p.radius)) {
-        if (particleSystem) particleSystem.spawnSparks(p.x, p.y, p.color, 3, 2);
-        this.projectiles.splice(i, 1);
-        continue;
-      }
-
-      // Check collision with enemy fighters
+      // Check Collision with Enemies
       let hit = false;
-      for (const fighter of fighters) {
-        if (fighter === p.owner || fighter.isDead || (fighter.team && fighter.team === p.owner.team)) continue;
+      for (const enemy of allFighters) {
+        if (enemy === p.owner || enemy.isDead) continue;
 
-        const dist = Math.hypot(fighter.x - p.x, fighter.y - p.y);
-        if (dist <= fighter.radius + p.radius) {
-          fighter.takeDamage(p.damage, p.owner, particleSystem, p.isUlt ? 'ult' : 'normal');
-
-          if (particleSystem) {
-            particleSystem.spawnSparks(p.x, p.y, p.color, p.isUlt ? 6 : 10, 4);
-            particleSystem.spawnShockwave(p.x, p.y, p.color, p.isUlt ? 25 : 40, 2);
-          }
-          if (soundEngine) soundEngine.playClash(p.isUlt ? 0.9 : 1.3);
-
+        const dist = Math.hypot(enemy.x - p.x, enemy.y - p.y);
+        if (dist <= enemy.radius + p.radius) {
           hit = true;
+          const isCrit = p.type === 'heavy_bullet' || Math.random() < 0.25;
+          enemy.takeDamage(p.damage, p.owner, particleSystem, isCrit ? 'crit' : 'normal');
+
+          if (soundEngine) soundEngine.playHit();
+          if (particleSystem) {
+            particleSystem.spawnShockwave(p.x, p.y, p.glowColor, 50, 4);
+            particleSystem.spawnSparks(p.x, p.y, p.color, 10, 4);
+          }
           break;
         }
+      }
+
+      // Check Arena Wall Bounce / Destroy
+      if (arena && !arena.isInside(p.x, p.y, p.radius)) {
+        if (p.type === 'horn' || p.type === 'heavy_bullet') {
+          // Ricochet once or despawn with sparks
+          if (particleSystem) {
+            particleSystem.spawnSparks(p.x, p.y, p.color, 6, 3);
+          }
+        }
+        hit = true;
       }
 
       if (hit || p.life <= 0) {
@@ -143,36 +164,60 @@ class SkillManager {
       ctx.save();
       ctx.translate(p.x, p.y);
 
-      if (p.type === 'shibuki_horn' && p.img && p.img.complete && p.img.naturalWidth > 0) {
-        ctx.rotate(p.currentAngle);
-        const w = 24;
-        const h = 24;
-        ctx.drawImage(p.img, -w / 2, -h / 2, w, h);
-      } else if (p.type === 'rapid_bullet') {
-        // Glowing tracer pellet
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = '#ff69b4';
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
-        ctx.fill();
+      // 1. Shibuki Large Spinning Horn Sprite
+      if (p.type === 'horn') {
+        ctx.rotate(p.spin);
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = '#c084fc';
 
+        if (p.img && p.img.complete && p.img.naturalWidth > 0) {
+          const s = p.drawSize || 38;
+          ctx.drawImage(p.img, -s / 2, -s / 2, s, s);
+        } else {
+          ctx.fillStyle = '#a855f7';
+          ctx.beginPath();
+          ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+      // 2. Nana Heavy Bullet (Large glowing Pink Heart/Orb with golden core)
+      } else if (p.type === 'heavy_bullet') {
+        ctx.rotate(p.angle);
+        ctx.shadowBlur = 24;
+        ctx.shadowColor = '#ff69b4';
+
+        // Outer Pink Energy Aura
         ctx.fillStyle = '#ff69b4';
         ctx.beginPath();
-        ctx.arc(0, 0, p.radius * 0.6, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, p.drawSize * 0.6, p.drawSize * 0.38, 0, 0, Math.PI * 2);
         ctx.fill();
+
+        // Inner Golden Core
+        ctx.fillStyle = '#fff0f5';
+        ctx.beginPath();
+        ctx.ellipse(2, 0, p.drawSize * 0.35, p.drawSize * 0.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Heart Icon center
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('💖', 0, 0);
+
+      // 3. Nana Rapid Bullet (Bright Pink Tracer)
       } else {
-        // Heavy Bullet
-        ctx.shadowBlur = 15;
+        ctx.rotate(p.angle);
+        ctx.shadowBlur = 12;
         ctx.shadowColor = '#ff69b4';
+
         ctx.fillStyle = '#ff69b4';
         ctx.beginPath();
-        ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, p.drawSize * 0.6, p.drawSize * 0.3, 0, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.arc(0, 0, p.radius * 0.45, 0, Math.PI * 2);
+        ctx.arc(2, 0, 3, 0, Math.PI * 2);
         ctx.fill();
       }
 
