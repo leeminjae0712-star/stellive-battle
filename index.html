@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>스텔라이브 바운스 배틀 (StelLive Bounce Battle) - hanakonana.cloud</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;600;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app" class="app-container">
+    <!-- Header -->
+    <header class="game-header">
+      <div class="logo-area">
+        <span class="badge-tag">StelLive Physics Battle</span>
+        <h1 class="logo-title"><span class="highlight">스텔라이브</span> 바운스 배틀</h1>
+        <span class="sub-domain">hanakonana.cloud</span>
+      </div>
+
+      <!-- Quick Control Bar -->
+      <div class="header-controls">
+        <button id="btn-sound" class="icon-btn" title="사운드 온/오프">
+          <i data-lucide="volume-2"></i>
+        </button>
+        <button id="btn-fullscreen" class="icon-btn" title="전체화면">
+          <i data-lucide="maximize"></i>
+        </button>
+        <button id="btn-theme" class="icon-btn" title="테마 변경">
+          <i data-lucide="palette"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Layout -->
+    <main class="main-layout">
+      <!-- Left Sidebar: Roster & Character Selection -->
+      <aside class="sidebar left-sidebar">
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3><i data-lucide="users"></i> 파이터 선택</h3>
+            <span class="fighter-count" id="active-count">0/12 참전 중</span>
+          </div>
+
+          <div class="roster-tabs">
+            <button class="tab-btn active" data-tab="all">전체</button>
+            <button class="tab-btn" data-tab="gen3">3기(클리셰)</button>
+            <button class="tab-btn" data-tab="gen2">2기(유니버스)</button>
+            <button class="tab-btn" data-tab="gen1">1기(미스틱)</button>
+          </div>
+
+          <div class="roster-grid" id="roster-grid">
+            <!-- Dynamically populated from characters.js -->
+          </div>
+
+          <div class="roster-actions">
+            <button id="btn-select-all" class="btn btn-secondary btn-sm">전원 선택</button>
+            <button id="btn-clear-all" class="btn btn-ghost btn-sm">전체 해제</button>
+            <button id="btn-random-pick" class="btn btn-accent btn-sm"><i data-lucide="shuffle"></i> 랜덤 4인</button>
+          </div>
+        </div>
+
+        <!-- Custom Fighter Creator Modal Trigger -->
+        <div class="panel-card custom-card">
+          <div class="panel-header">
+            <h4><i data-lucide="sparkles"></i> 커스텀 파이터 추가</h4>
+          </div>
+          <p class="card-desc">원하는 이름, 컬러, 사진으로 나만의 파이터를 만들어 참전시키세요!</p>
+          <button id="btn-open-creator" class="btn btn-primary btn-sm btn-block">
+            <i data-lucide="plus-circle"></i> 커스텀 파이터 제작
+          </button>
+        </div>
+      </aside>
+
+      <!-- Center: Canvas Arena & Shorts Screen -->
+      <section class="arena-section">
+        <div class="canvas-wrapper" id="canvas-wrapper">
+          <canvas id="battleCanvas"></canvas>
+
+          <!-- Dynamic Ultimate Cut-In Overlay -->
+          <div id="ult-cutin" class="ult-cutin hidden">
+            <div class="cutin-bg"></div>
+            <div class="cutin-character" id="cutin-character">
+              <div class="cutin-avatar" id="cutin-avatar"></div>
+              <div class="cutin-info">
+                <span class="cutin-sub" id="cutin-sub">ULTIMATE SKILL</span>
+                <h2 class="cutin-name" id="cutin-name">하나코 나나</h2>
+                <div class="cutin-skill" id="cutin-skill">황홀경 버섯 대폭발!</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Winner Screen Overlay -->
+          <div id="winner-overlay" class="winner-overlay hidden">
+            <div class="winner-modal">
+              <div class="crown-icon">👑</div>
+              <span class="winner-tag">VICTORY ROYALE</span>
+              <h2 id="winner-name" class="winner-title">하나코 나나</h2>
+              <div class="winner-avatar" id="winner-avatar"></div>
+              <div class="winner-stats" id="winner-stats">
+                <div class="stat-box">
+                  <span class="label">처치 수 (Kills)</span>
+                  <span class="value" id="winner-kills">0</span>
+                </div>
+                <div class="stat-box">
+                  <span class="label">총 가한 데미지</span>
+                  <span class="value" id="winner-damage">0</span>
+                </div>
+                <div class="stat-box">
+                  <span class="label">벽 바운스 횟수</span>
+                  <span class="value" id="winner-bounces">0</span>
+                </div>
+              </div>
+              <div class="winner-actions">
+                <button id="btn-restart-match" class="btn btn-primary btn-lg">
+                  <i data-lucide="rotate-ccw"></i> 다시 배틀하기
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- In-Game HUD: Kill Feed -->
+          <div class="hud-killfeed" id="hud-killfeed"></div>
+
+          <!-- Battle Royale Storm Warning -->
+          <div id="storm-warning" class="storm-warning hidden">
+            ⚠️ 자기장이 축소됩니다! ⚠️
+          </div>
+        </div>
+
+        <!-- Arena Control Bar -->
+        <div class="control-panel">
+          <div class="control-group">
+            <button id="btn-start" class="btn btn-success btn-icon-text">
+              <i data-lucide="play"></i> <span id="btn-start-text">배틀 시작</span>
+            </button>
+            <button id="btn-reset" class="btn btn-secondary btn-icon-text">
+              <i data-lucide="rotate-ccw"></i> 리셋
+            </button>
+          </div>
+
+          <!-- Speed Multipliers (Viral Shorts Feature) -->
+          <div class="control-group speed-group">
+            <span class="control-label"><i data-lucide="zap"></i> 속도:</span>
+            <div class="btn-group">
+              <button class="speed-btn" data-speed="0.5">0.5x</button>
+              <button class="speed-btn active" data-speed="1">1x</button>
+              <button class="speed-btn" data-speed="2">2x</button>
+              <button class="speed-btn" data-speed="5">5x</button>
+              <button class="speed-btn turbo" data-speed="10">⚡10x</button>
+            </div>
+          </div>
+
+          <!-- Mode & Arena Selectors -->
+          <div class="control-group">
+            <div class="select-wrapper">
+              <i data-lucide="shield"></i>
+              <select id="select-mode">
+                <option value="royale">배틀로얄 (서바이벌)</option>
+                <option value="duel">1 vs 1 듀얼 매치</option>
+                <option value="team">팀 데스매치 (2 vs 2)</option>
+                <option value="endless">무한 난투 모드</option>
+              </select>
+            </div>
+
+            <div class="select-wrapper">
+              <i data-lucide="circle-dot"></i>
+              <select id="select-arena">
+                <option value="circle">원형 아레나 (Circle)</option>
+                <option value="box">사각 아레나 (Box)</option>
+                <option value="hexagon">육각형 네온 링 (Hexagon)</option>
+                <option value="pinball">핀볼 범퍼 아레나 (Pinball)</option>
+                <option value="rotating">회전 장애물 아레나 (Spinner)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Sidebar: Live Stats, Leaderboard & Interactive Controls -->
+      <aside class="sidebar right-sidebar">
+        <!-- Live Leaderboard -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3><i data-lucide="bar-chart-2"></i> 실시간 랭킹</h3>
+            <span class="live-pulse">LIVE</span>
+          </div>
+          <div class="leaderboard-list" id="leaderboard-list">
+            <!-- Dynamically updated -->
+          </div>
+        </div>
+
+        <!-- Simulation Tweaks & Environment -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3><i data-lucide="sliders"></i> 물리 & 스킬 옵션</h3>
+          </div>
+          <div class="setting-row">
+            <label for="slider-bounciness">탄성력 (Bounciness)</label>
+            <input type="range" id="slider-bounciness" min="0.8" max="1.5" step="0.05" value="1.05">
+          </div>
+          <div class="setting-row">
+            <label for="slider-charge-rate">스킬 충전 속도 (SP Rate)</label>
+            <input type="range" id="slider-charge-rate" min="0.5" max="3.0" step="0.1" value="1.2">
+          </div>
+          <div class="setting-row">
+            <label for="slider-gravity">중력/자기장 축소 속도</label>
+            <input type="range" id="slider-gravity" min="0" max="2" step="0.2" value="0.6">
+          </div>
+          <div class="setting-toggle-row">
+            <span>스킬 컷인 연출</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-cutin" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="setting-toggle-row">
+            <span>슬로우 모션 킬캠</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-slowmo" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="setting-toggle-row">
+            <span>마우스 던지기 인터랙션</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-mouse-grab" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Domain Footer Card -->
+        <div class="panel-card domain-card">
+          <div class="domain-badge">
+            <i data-lucide="globe"></i> <strong>hanakonana.cloud</strong>
+          </div>
+          <p class="domain-sub">스텔라이브 3기 하나코 나나 응원 & 숏폼 배틀 웹게임</p>
+          <div class="domain-links">
+            <a href="https://chzzk.naver.com" target="_blank" class="link-btn"><i data-lucide="tv"></i> 치지직</a>
+            <a href="https://cafe.naver.com/stellive" target="_blank" class="link-btn"><i data-lucide="message-square"></i> 스텔라이브 팬카페</a>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Custom Fighter Modal -->
+    <div id="modal-creator" class="modal-backdrop hidden">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3><i data-lucide="user-plus"></i> 나만의 파이터 제작</h3>
+          <button id="btn-close-modal" class="btn-icon"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>파이터 이름</label>
+            <input type="text" id="custom-name" placeholder="예: 시청자1, 칸나팬" maxlength="10" value="슈퍼 나나단">
+          </div>
+          <div class="form-group">
+            <label>대표 색상 (테마 컬러)</label>
+            <div class="color-picker-group">
+              <input type="color" id="custom-color" value="#a855f7">
+              <span class="color-hex" id="color-hex-val">#a855f7</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>스킬 타입 선택</label>
+            <select id="custom-skill">
+              <option value="spore">맹독 버섯 포자 (하나코 나나 타입)</option>
+              <option value="fire">용의 화염탄 (아이리 칸나 타입)</option>
+              <option value="ice">유니콘 빙결 대쉬 (아야츠노 유니 타입)</option>
+              <option value="laser">별빛 레이저 저격 (시라유키 히나 타입)</option>
+              <option value="vampire">뱀파이어 흡혈 (아카네 리제 타입)</option>
+              <option value="punch">고양이 냥냥 펀치 (네네코 마시로 타입)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>이모지 / 아이콘</label>
+            <input type="text" id="custom-emoji" placeholder="🍄" maxlength="2" value="🍄">
+          </div>
+          <div class="form-group">
+            <label>프로필 이미지 업로드 (선택 사항)</label>
+            <input type="file" id="custom-image-file" accept="image/*">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-save-custom" class="btn btn-primary"><i data-lucide="check"></i> 파이터 추가하기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/data/characters.js"></script>
+  <script src="js/engine/audio.js"></script>
+  <script src="js/engine/arena.js"></script>
+  <script src="js/engine/physics.js"></script>
+  <script src="js/entities/particle.js"></script>
+  <script src="js/entities/skill.js"></script>
+  <script src="js/entities/fighter.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    // Initialize Lucide icons
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    });
+  </script>
+</body>
+</html>
