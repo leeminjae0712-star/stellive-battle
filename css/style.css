@@ -371,7 +371,7 @@ body {
   width: min(100%, 640px);
   aspect-ratio: 1 / 1;
   background: #0f111a;
-  border: 3px solid #3b4261;
+  border: 2px solid rgba(255, 255, 255, 0.15);
   border-radius: var(--radius-md);
   overflow: hidden;
   display: flex;
