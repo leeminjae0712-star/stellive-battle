@@ -1,6 +1,6 @@
 ﻿/**
  * Fighter Entity Class
- * High performance, guaranteed continuous velocity, 60 FPS smooth rendering.
+ * Fast Ult charging & balanced long fight action.
  */
 
 class Fighter {
@@ -28,24 +28,24 @@ class Fighter {
     this.vx = Math.cos(initialAngle) * this.baseSpeed;
     this.vy = Math.sin(initialAngle) * this.baseSpeed;
 
-    // Combat Stats
+    // Combat Stats (High health pool for extended battle)
     this.maxHp = config.hp || 1000;
     this.hp = this.maxHp;
-    this.atk = config.atk || 54;
-    this.def = config.def || 16;
+    this.atk = config.atk || 36;
+    this.def = config.def || 14;
     this.team = team;
     this.isDead = false;
 
-    // Skill Cooldowns
+    // Fast Skill & Ult Cooldowns (High Action!)
     this.skillType = config.skillType;
     this.skill1Name = config.skill1Name || '스킬 1';
-    this.skill1MaxCd = config.skill1Cooldown || 3.0;
-    this.skill1Timer = Math.random() * 1.5;
+    this.skill1MaxCd = config.skill1Cooldown || 2.5;
+    this.skill1Timer = Math.random() * 1.0;
 
     this.ultName = config.ultName || '궁극기';
     this.ultDesc = config.ultDesc || '';
-    this.ultMaxCd = config.ultCooldown || 13.0;
-    this.ultTimer = 0;
+    this.ultMaxCd = config.ultCooldown || 6.5; // Short exciting Ult cooldown!
+    this.ultTimer = Math.random() * 2.0;
 
     // Nana Machine Gun ("사랑이 난사")
     this.aimAngle = initialAngle;
@@ -59,7 +59,7 @@ class Fighter {
     // Shibuki Fox Transform & Dash ("캥캥이")
     this.isFoxTransformed = false;
     this.foxTransformTimer = 0;
-    this.foxMaxDuration = 5.0;
+    this.foxMaxDuration = 3.5;
     this.foxDashCooldown = 0;
     this.scratchCooldown = 0;
     this.pendingHorns = [];
@@ -146,7 +146,7 @@ class Fighter {
       this.radius = this.baseRadius * 1.35;
 
       if (this.foxDashCooldown <= 0 && nearestEnemy) {
-        this.foxDashCooldown = 1.3;
+        this.foxDashCooldown = 1.1;
         const dashAngle = Math.atan2(nearestEnemy.y - this.y, nearestEnemy.x - this.x);
         const dashSpeed = this.baseSpeed * 2.3;
         this.vx = Math.cos(dashAngle) * dashSpeed;
@@ -206,7 +206,7 @@ class Fighter {
       }
     }
 
-    // 5. Unstoppable Continuous Movement
+    // 5. Continuous Movement
     this.x += this.vx * speedMultiplier;
     this.y += this.vy * speedMultiplier;
   }
@@ -258,8 +258,8 @@ class Fighter {
     } else if (this.id === 'shibuki') {
       this.isFoxTransformed = true;
       this.foxTransformTimer = this.foxMaxDuration;
-      this.invulnerableTimer = 1.0;
-      this.foxDashCooldown = 1.2;
+      this.invulnerableTimer = 0.8;
+      this.foxDashCooldown = 1.0;
 
       if (enemy) {
         const dashAngle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
@@ -275,29 +275,30 @@ class Fighter {
     }
   }
 
+  // Balanced Nerfed Fox Scratch Damage
   applyFoxScratch(enemy, particleSystem) {
     if (!this.isFoxTransformed || this.scratchCooldown > 0 || !enemy || enemy.isDead) return;
 
-    this.scratchCooldown = 0.22;
-    const dmg = Math.floor(this.atk * 0.45);
+    this.scratchCooldown = 0.25;
+    const dmg = 16; // Balanced nerfed scratch damage
     enemy.takeDamage(dmg, this, particleSystem, 'crit');
 
     if (particleSystem) {
       particleSystem.spawnScratch(enemy.x, enemy.y, '#c084fc');
       particleSystem.spawnDamageText(enemy.x, enemy.y, '할큄!', 'crit', '#f43f5e');
-      particleSystem.shake(4);
+      particleSystem.shake(3);
     }
   }
 
   takeDamage(amount, attacker, particleSystem, type = 'normal') {
     if (this.isDead || this.invulnerableTimer > 0) return 0;
 
-    const finalDamage = Math.max(5, Math.floor(amount - this.def * 0.25));
+    const finalDamage = Math.max(3, Math.floor(amount - this.def * 0.2));
     this.hp -= finalDamage;
 
     if (particleSystem) {
       particleSystem.spawnDamageNumber(this.x, this.y, finalDamage, type);
-      particleSystem.spawnSparks(this.x, this.y, this.color, type === 'crit' ? 8 : 4);
+      particleSystem.spawnSparks(this.x, this.y, this.color, type === 'crit' ? 6 : 3);
     }
 
     if (this.hp <= 0) {

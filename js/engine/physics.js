@@ -1,6 +1,6 @@
 ﻿/**
  * Physics Engine
- * Rock-Solid Continuous Bouncing Engine (Zero Sticking, Zero Pinning, 100% Unstuck Guarantee).
+ * Low body clash damage + unstuck guarantee.
  */
 
 class PhysicsEngine {
@@ -11,13 +11,13 @@ class PhysicsEngine {
   update(dt, fighters, arena, soundEngine, particleSystem, speedMultiplier = 1) {
     if (!arena || fighters.length === 0) return;
 
-    // 1. Resolve Fighter vs Fighter Clashes (Guaranteed zero sticking)
+    // 1. Resolve Fighter vs Fighter Clashes
     this.resolveFighterCollisions(fighters, soundEngine, particleSystem);
 
-    // 2. Resolve Arena Wall Collisions & Clamping
+    // 2. Resolve Arena Wall Collisions
     this.resolveArenaCollisions(fighters, arena, soundEngine, particleSystem);
 
-    // 3. Guarantee Non-Zero Constant Speed for all fighters
+    // 3. Guarantee Non-Zero Constant Speed
     for (const f of fighters) {
       if (f.isDead) continue;
       const targetSpeed = f.isFoxTransformed ? f.baseSpeed * 1.65 : f.baseSpeed;
@@ -51,7 +51,6 @@ class PhysicsEngine {
         const minDist = f1.radius + f2.radius;
 
         if (dist < minDist) {
-          // If perfectly overlapping, create arbitrary normal
           if (dist === 0) {
             dx = 1;
             dy = 0;
@@ -61,19 +60,16 @@ class PhysicsEngine {
           const nx = dx / dist;
           const ny = dy / dist;
 
-          // 1. Separate completely with extra 2px buffer to guarantee no sticky lock
           const overlap = minDist - dist + 2.0;
           f1.x -= nx * (overlap * 0.5);
           f1.y -= ny * (overlap * 0.5);
           f2.x += nx * (overlap * 0.5);
           f2.y += ny * (overlap * 0.5);
 
-          // 2. Relative Velocity along Normal
           const rvx = f2.vx - f1.vx;
           const rvy = f2.vy - f1.vy;
           const velAlongNormal = rvx * nx + rvy * ny;
 
-          // 3. Elastic impulse reflection
           if (velAlongNormal < 0) {
             const impulseMag = -(1 + this.restitution) * velAlongNormal / 2;
             f1.vx -= impulseMag * nx;
@@ -81,27 +77,26 @@ class PhysicsEngine {
             f2.vx += impulseMag * nx;
             f2.vy += impulseMag * ny;
           } else {
-            // If already separating but overlapping, push apart with burst impulse
             f1.vx -= nx * 2.0;
             f1.vy -= ny * 2.0;
             f2.vx += nx * 2.0;
             f2.vy += ny * 2.0;
           }
 
-          // 4. Kaengkaengi Scratch & Clash Damage
           if (f1.isFoxTransformed) f1.applyFoxScratch(f2, particleSystem);
           if (f2.isFoxTransformed) f2.applyFoxScratch(f1, particleSystem);
 
+          // Minimal Clash Damage for prolonged battles
           const relSpeed = Math.hypot(f1.vx - f2.vx, f1.vy - f2.vy);
-          const dmg = Math.max(8, Math.floor(relSpeed * 4.5));
+          const dmg = Math.max(3, Math.floor(relSpeed * 1.5));
           f1.takeDamage(dmg, f2, particleSystem);
           f2.takeDamage(dmg, f1, particleSystem);
 
           if (particleSystem) {
             const mx = (f1.x + f2.x) / 2;
             const my = (f1.y + f2.y) / 2;
-            particleSystem.spawnSparks(mx, my, '#ffffff', 8, 3);
-            particleSystem.spawnShockwave(mx, my, '#ffd700', 30, 2);
+            particleSystem.spawnSparks(mx, my, '#ffffff', 6, 3);
+            particleSystem.spawnShockwave(mx, my, '#ffd700', 25, 2);
           }
 
           if (soundEngine) {
@@ -118,30 +113,24 @@ class PhysicsEngine {
 
       let hitWall = false;
 
-      // Left Wall
       if (f.x - f.radius <= arena.left) {
         f.x = arena.left + f.radius;
         f.vx = Math.abs(f.vx);
         if (Math.abs(f.vx) < 1.0) f.vx = 2.0;
         hitWall = true;
-      }
-      // Right Wall
-      else if (f.x + f.radius >= arena.right) {
+      } else if (f.x + f.radius >= arena.right) {
         f.x = arena.right - f.radius;
         f.vx = -Math.abs(f.vx);
         if (Math.abs(f.vx) < 1.0) f.vx = -2.0;
         hitWall = true;
       }
 
-      // Top Wall
       if (f.y - f.radius <= arena.top) {
         f.y = arena.top + f.radius;
         f.vy = Math.abs(f.vy);
         if (Math.abs(f.vy) < 1.0) f.vy = 2.0;
         hitWall = true;
-      }
-      // Bottom Wall
-      else if (f.y + f.radius >= arena.bottom) {
+      } else if (f.y + f.radius >= arena.bottom) {
         f.y = arena.bottom - f.radius;
         f.vy = -Math.abs(f.vy);
         if (Math.abs(f.vy) < 1.0) f.vy = -2.0;
