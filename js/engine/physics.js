@@ -13,7 +13,7 @@ class PhysicsEngine {
     // 1. Resolve Collisions
     this.resolveFighterCollisions(fighters, soundEngine, particleSystem);
 
-    // 2. Resolve Wall Bounces & 3-Bounce Wall Slam Damage
+    // 2. Resolve Wall Bounces & 4-Bounce Wall Slam Damage
     this.resolveArenaCollisions(fighters, arena, soundEngine, particleSystem);
 
     // 3. Normalization (Only for non-stunned, non-slamming fighters)
@@ -21,12 +21,7 @@ class PhysicsEngine {
       if (f.isDead || f.stunTimer > 0) continue;
 
       if (f.wallBounceLeft > 0) {
-        // High speed bounce maintained
-        continue;
-      }
-
-      if (f.isRikoUltDashing) {
-        // High speed dash maintained
+        // High speed bounce maintained until all wall bounces are finished
         continue;
       }
 
@@ -66,11 +61,11 @@ class PhysicsEngine {
           f2.x += nx * overlap * 0.5;
           f2.y += ny * overlap * 0.5;
 
-          // ═══ Riko Ult Dash Hit Trigger on Contact! ═══
-          if (f1.isRikoUltDashing && f1.id === 'riko') {
-            f1.applyRikoUltSmash(f2, particleSystem, soundEngine);
-          } else if (f2.isRikoUltDashing && f2.id === 'riko') {
-            f2.applyRikoUltSmash(f1, particleSystem, soundEngine);
+          // ═══ Riko Charged Blade Contact Trigger! ═══
+          if (f1.isBladeCharged && f1.id === 'riko') {
+            f1.applyRikoChargedSmash(f2, particleSystem, soundEngine);
+          } else if (f2.isBladeCharged && f2.id === 'riko') {
+            f2.applyRikoChargedSmash(f1, particleSystem, soundEngine);
           }
 
           const rvx = f2.vx - f1.vx, rvy = f2.vy - f1.vy;
@@ -131,18 +126,21 @@ class PhysicsEngine {
       }
 
       if (hitWall) {
-        // ═══ Multi-Bounce Super Wall Slam (3 Bounces of 50 DMG each!) ═══
+        // ═══ 4-Bounce Super Wall Slam Pinball (50 DMG each bounce!) ═══
         if (f.wallBounceLeft > 0) {
           f.wallBounceLeft--;
-          const bounceCount = 3 - f.wallBounceLeft;
+          const bounceIndex = 4 - f.wallBounceLeft;
           const slamDmg = 50;
           f.takeDamage(slamDmg, f.wallSlamAttacker || null, particleSystem, 'crit');
 
-          // Add extra elastic kick to keep bouncing violently
+          // Keep high elastic rebound
           f.vx *= 1.05;
           f.vy *= 1.05;
 
-          const slamLabel = bounceCount === 1 ? '💥 쿵! (벽쾅 50딜)' : bounceCount === 2 ? '💥 쾅! (2단벽쾅 50딜)' : '💥 콰앙! (3단벽쾅 50딜)';
+          const slamLabel = bounceIndex === 1 ? '💥 쿵! (벽쾅 50딜)' :
+                            bounceIndex === 2 ? '💥 쾅! (2단벽쾅 50딜)' :
+                            bounceIndex === 3 ? '💥 쾅! (3단벽쾅 50딜)' :
+                                               '💥 콰앙! (4단벽쾅 50딜)';
 
           if (particleSystem) {
             particleSystem.shake(14);

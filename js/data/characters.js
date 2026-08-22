@@ -2,7 +2,7 @@
  * StelLive Characters Roster - Pro Balanced 3-Hero System
  * 1. 하나코 나나 (Hanako Nana) - Heavy Sniper Gunner
  * 2. 텐코 시부키 (Tenko Shibuki) - Rapid Poke & Fox Berserker (8.0s Fast Ult!)
- * 3. 유즈하 리코 (Yuzuha Riko) - Holy Sword Drop & Ultra Multi-Bounce Wall Slam
+ * 3. 유즈하 리코 (Yuzuha Riko) - Holy Sword Drop & Charged Blade Wall-Slam Pinball
  * Domain: hanakonana.cloud
  */
 
@@ -97,9 +97,9 @@ const STELLIVE_CHARACTERS = [
     skill1Desc: '맵 한가운데에 거대한 성검을 투하하여 맵 전체에 착탄 35딜 + 3초간 12딜 전역 파동 방출!',
     skill1Cooldown: 3.8,
 
-    // Ultimate: Hit & 3-Bounce Super Wall Slam
-    ultName: '초돌진 3단벽쾅',
-    ultDesc: '적에게 돌진 닿으면 180딜 강타 후 초광속으로 날려 벽에 3연속 쿵쾅쿵쾅(총 150 추가딜) 튕깁니다!',
+    // Ultimate: Stance Charge & Contact 4-Bounce Super Wall Slam
+    ultName: '일도양단 벽쾅',
+    ultDesc: '칼을 치켜들고 일격을 장전! 적과 닿으면 200딜 핵강타 후 벽에 4연속 쿵쾅쿵쾅(총 200 추가딜) 튕깁니다!',
     ultCooldown: 10.5,
 
     avatarUrl: 'assets/riko_avatar.png',

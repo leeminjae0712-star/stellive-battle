@@ -2,7 +2,7 @@
  * Fighter Entity - Ultra Clean & Crisp 3-Hero System
  * 1. 하나코 나나 (Nana) - Heavy Sniper Gunner (160 dmg shot / 16-burst ult)
  * 2. 텐코 시부키 (Shibuki) - Rapid Poke (30x2) & 8.0s Fast Berserker Fox
- * 3. 유즈하 리코 (Riko) - Ultra Dash Smash on Contact + 3-Bounce Wall Slam Combo
+ * 3. 유즈하 리코 (Riko) - Blade Charge Stance + Contact Smash & 4-Bounce Super Wall Slam
  */
 
 class Fighter {
@@ -51,9 +51,9 @@ class Fighter {
     this.wallBounceLeft = 0;
     this.wallSlamAttacker = null;
 
-    // Riko Ult Dash
-    this.isRikoUltDashing = false;
-    this.rikoUltDashTimer = 0;
+    // Riko Blade Charge Stance
+    this.isBladeCharged = false;
+    this.bladeChargeTimer = 0;
 
     // Clash Damage Throttle
     this.clashCooldown = 0;
@@ -106,7 +106,7 @@ class Fighter {
       this.vy *= 0.85;
       this.x += this.vx * speedMultiplier;
       this.y += this.vy * speedMultiplier;
-      return; // Stunned
+      return;
     }
 
     const nearestEnemy = this.findNearestEnemy(allFighters);
@@ -123,11 +123,11 @@ class Fighter {
     if (this.invulnerableTimer > 0) this.invulnerableTimer -= effDt;
     if (this.clashCooldown > 0) this.clashCooldown -= effDt;
 
-    // ── Riko Ult Dash Timeout ──
-    if (this.isRikoUltDashing) {
-      this.rikoUltDashTimer -= effDt;
-      if (this.rikoUltDashTimer <= 0) {
-        this.isRikoUltDashing = false;
+    // ── Riko Blade Charge Duration Timeout ──
+    if (this.isBladeCharged) {
+      this.bladeChargeTimer -= effDt;
+      if (this.bladeChargeTimer <= 0) {
+        this.isBladeCharged = false;
       }
     }
 
@@ -281,55 +281,48 @@ class Fighter {
       }
 
     } else if (this.id === 'riko') {
-      // ═══ Riko Ultra Dash Trigger ═══
-      if (enemy) {
-        this.isRikoUltDashing = true;
-        this.rikoUltDashTimer = 1.8; // Will dash toward enemy until contact
-        this.invulnerableTimer = 0.8;
+      // ═══ Riko Stance: Charge Sword for Contact Strike! ═══
+      this.isBladeCharged = true;
+      this.bladeChargeTimer = 6.0; // Ready for contact smash
+      this.invulnerableTimer = 0.5;
 
-        const angle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
-        const dashSpeed = 24.0; // Rapid rocket rush!
-        this.vx = Math.cos(angle) * dashSpeed;
-        this.vy = Math.sin(angle) * dashSpeed;
-
-        if (particleSystem) {
-          particleSystem.spawnDamageText(this.x, this.y - 25, '⚡ 초광속 돌진!', 'skill', '#10b981');
-          particleSystem.shake(6);
-        }
+      if (particleSystem) {
+        particleSystem.shake(8);
+        particleSystem.spawnDamageText(this.x, this.y - 25, '⚔️ 일도양단 장전 완료!', 'skill', '#10b981');
       }
     }
   }
 
-  // ═══ Riko Contact Smash Trigger (Called when Riko dashes and touches enemy) ═══
-  applyRikoUltSmash(target, particleSystem, soundEngine) {
-    if (!this.isRikoUltDashing || !target || target.isDead) return;
-    this.isRikoUltDashing = false;
+  // ═══ Riko Contact Smash (Triggers when charged Riko bumps into enemy) ═══
+  applyRikoChargedSmash(target, particleSystem, soundEngine) {
+    if (!this.isBladeCharged || !target || target.isDead) return;
+    this.isBladeCharged = false;
 
     // 1. Stun target for 1.2s
     target.stunTimer = 1.2;
 
-    // 2. Heavy 180 Strike DMG!
-    target.takeDamage(180, this, particleSystem, 'crit');
+    // 2. Heavy 200 Strike DMG!
+    target.takeDamage(200, this, particleSystem, 'crit');
 
-    // 3. Super High-Speed Launch for 3-Bounce Wall Slam!
+    // 3. Super High-Speed Launch for 4-Bounce Wall Slam!
     const hitAngle = Math.atan2(target.y - this.y, target.x - this.x);
-    const slamLaunchSpeed = 38.0; // Extreme speed throw!
+    const slamLaunchSpeed = 46.0; // Extreme speed throw!
     target.vx = Math.cos(hitAngle) * slamLaunchSpeed;
     target.vy = Math.sin(hitAngle) * slamLaunchSpeed;
-    target.wallBounceLeft = 3; // 3 Consecutive Wall Slams!
+    target.wallBounceLeft = 4; // 4 Consecutive Wall Slams!
     target.wallSlamAttacker = this;
 
     // Ricochet Riko back slightly
-    this.vx = -Math.cos(hitAngle) * 5.0;
-    this.vy = -Math.sin(hitAngle) * 5.0;
-    this.swordSlashTimer = 0.4;
+    this.vx = -Math.cos(hitAngle) * 4.0;
+    this.vy = -Math.sin(hitAngle) * 4.0;
+    this.swordSlashTimer = 0.5;
 
     if (particleSystem) {
-      particleSystem.shake(15);
-      particleSystem.spawnSlash(target.x, target.y, hitAngle + Math.PI / 4, '#10b981', 90);
-      particleSystem.spawnSlash(target.x, target.y, hitAngle - Math.PI / 4, '#34d399', 90);
+      particleSystem.shake(16);
+      particleSystem.spawnSlash(target.x, target.y, hitAngle + Math.PI / 4, '#10b981', 95);
+      particleSystem.spawnSlash(target.x, target.y, hitAngle - Math.PI / 4, '#34d399', 95);
       particleSystem.spawnSparks(target.x, target.y, '#10b981', 20, 6);
-      particleSystem.spawnDamageText(target.x, target.y - 30, '💥 핵 스매시 (180딜)!', 'crit', '#ffd700');
+      particleSystem.spawnDamageText(target.x, target.y - 30, '💥 핵 스매시 (200딜)!', 'crit', '#ffd700');
     }
     try { if (soundEngine) soundEngine.playSlash(); } catch(e) {}
   }
@@ -432,12 +425,23 @@ class Fighter {
         ctx.restore();
       }
 
-      // ── Riko Sword '성검' ──
+      // ── Riko Sword '성검' (Charged Stance Shines Bright!) ──
       if (this.id === 'riko' && this.swordImg && this.swordImg.complete && this.swordImg.naturalWidth > 0) {
         ctx.save();
         const sd = this.radius * 0.92;
         ctx.translate(Math.cos(this.aimAngle) * sd, Math.sin(this.aimAngle) * sd);
-        ctx.rotate(this.aimAngle + Math.PI / 4 + (this.swordSlashTimer > 0 ? Math.sin(Date.now() * 0.06) * 0.8 : 0));
+
+        let swordRot = this.aimAngle + Math.PI / 4;
+        if (this.isBladeCharged) {
+          // Charged stance: rapid vibration and brilliant emerald glow!
+          swordRot += Math.sin(Date.now() * 0.03) * 0.4;
+          ctx.shadowColor = '#34d399';
+          ctx.shadowBlur = 20;
+        } else if (this.swordSlashTimer > 0) {
+          swordRot += Math.sin(Date.now() * 0.06) * 0.8;
+        }
+
+        ctx.rotate(swordRot);
         ctx.drawImage(this.swordImg, -12, -45, 24, 80);
         ctx.restore();
       }
@@ -449,6 +453,16 @@ class Fighter {
       ctx.font = '16px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('💫', Math.cos(starAngle) * 20, -this.radius - 30);
+    }
+
+    // ── Charged Blade Indicator ──
+    if (this.isBladeCharged) {
+      const pulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.012);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = `rgba(52, 211, 153, ${pulse})`;
+      ctx.beginPath();
+      ctx.arc(0, 0, this.radius + 10, 0, Math.PI * 2);
+      ctx.stroke();
     }
 
     // ── Ultimate Charge Ring ──
