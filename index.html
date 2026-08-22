@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>스텔라이브 배틀: 나나 vs 시부키 (StelLive Battle) - hanakonana.cloud</title>
+  <title>스텔라이브 배틀: 나나 vs 시부키 - hanakonana.cloud</title>
   <link rel="stylesheet" href="css/style.css">
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -16,12 +16,11 @@
     <!-- Header -->
     <header class="game-header">
       <div class="logo-area">
-        <span class="badge-tag">StelLive Physics Battle</span>
+        <span class="badge-tag">Reels 1v1 Battle</span>
         <h1 class="logo-title"><span class="highlight">스텔라이브</span> 배틀</h1>
         <span class="sub-domain">hanakonana.cloud</span>
       </div>
 
-      <!-- Quick Control Bar -->
       <div class="header-controls">
         <button id="btn-sound" class="icon-btn" title="사운드 온/오프">
           <i data-lucide="volume-2"></i>
@@ -32,42 +31,105 @@
       </div>
     </header>
 
-    <!-- Top Minecraft-Style Health HUD (마인크래프트 하트 체력바) -->
-    <section class="minecraft-hud-container" id="minecraft-hud">
-      <div class="mc-hud-title">
-        <span class="mc-icon">⚔️</span>
-        <span class="mc-label">LIVE FIGHTERS STATUS</span>
+    <!-- Top 50:50 Split VS Cooldown & Health HUD (상단 반반 실시간 쿨타임 & 체력 바) -->
+    <section class="vs-hud-container" id="vs-hud">
+      <!-- Left: Hanako Nana -->
+      <div class="vs-fighter-card nana-card" id="vs-card-nana">
+        <div class="vs-profile-row">
+          <div class="vs-avatar-box">
+            <img src="assets/nana_avatar.png" alt="하나코 나나">
+          </div>
+          <div class="vs-name-box">
+            <span class="vs-fighter-name">하나코 나나</span>
+            <span class="vs-hp-text" id="hud-hp-nana">1000 / 1000 HP</span>
+          </div>
+        </div>
+
+        <!-- HP Bar & Hearts -->
+        <div class="vs-bar-wrap">
+          <div class="vs-bar-bg">
+            <div class="vs-bar-fill hp-fill" id="hud-hp-bar-nana" style="width: 100%;"></div>
+          </div>
+          <div class="vs-hearts-row" id="hud-hearts-nana">❤️❤️❤️❤️❤️</div>
+        </div>
+
+        <!-- Skill 1 & Ult Cooldown Bars -->
+        <div class="vs-cooldowns-grid">
+          <div class="cd-row">
+            <div class="cd-label-row">
+              <span class="cd-name">🌸 사랑이 단발</span>
+              <span class="cd-status" id="hud-s1-status-nana">READY!</span>
+            </div>
+            <div class="cd-bar-bg">
+              <div class="cd-bar-fill s1-fill" id="hud-s1-bar-nana" style="width: 100%;"></div>
+            </div>
+          </div>
+
+          <div class="cd-row">
+            <div class="cd-label-row">
+              <span class="cd-name">⚡ 뚜루루룰루 난사</span>
+              <span class="cd-status" id="hud-ult-status-nana">0%</span>
+            </div>
+            <div class="cd-bar-bg">
+              <div class="cd-bar-fill ult-fill" id="hud-ult-bar-nana" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="mc-hearts-grid" id="mc-hearts-grid">
-        <!-- Dynamically rendered for active fighters -->
+
+      <!-- VS Center Badge -->
+      <div class="vs-divider">
+        <div class="vs-badge">VS</div>
+      </div>
+
+      <!-- Right: Tenko Shibuki -->
+      <div class="vs-fighter-card shibuki-card" id="vs-card-shibuki">
+        <div class="vs-profile-row reverse">
+          <div class="vs-avatar-box">
+            <img src="assets/shibuki_avatar.png" alt="텐코 시부키">
+          </div>
+          <div class="vs-name-box right-align">
+            <span class="vs-fighter-name">텐코 시부키</span>
+            <span class="vs-hp-text" id="hud-hp-shibuki">1100 / 1100 HP</span>
+          </div>
+        </div>
+
+        <!-- HP Bar & Hearts -->
+        <div class="vs-bar-wrap">
+          <div class="vs-bar-bg">
+            <div class="vs-bar-fill hp-fill shibuki-hp" id="hud-hp-bar-shibuki" style="width: 100%;"></div>
+          </div>
+          <div class="vs-hearts-row right-align" id="hud-hearts-shibuki">❤️❤️❤️❤️❤️</div>
+        </div>
+
+        <!-- Skill 1 & Ult Cooldown Bars -->
+        <div class="vs-cooldowns-grid">
+          <div class="cd-row">
+            <div class="cd-label-row">
+              <span class="cd-name">🦊 뿔 짤짤이</span>
+              <span class="cd-status" id="hud-s1-status-shibuki">READY!</span>
+            </div>
+            <div class="cd-bar-bg">
+              <div class="cd-bar-fill s1-fill shibuki-s1" id="hud-s1-bar-shibuki" style="width: 100%;"></div>
+            </div>
+          </div>
+
+          <div class="cd-row">
+            <div class="cd-label-row">
+              <span class="cd-name">🌟 캥캥이 폭풍대쉬</span>
+              <span class="cd-status" id="hud-ult-status-shibuki">0%</span>
+            </div>
+            <div class="cd-bar-bg">
+              <div class="cd-bar-fill ult-fill" id="hud-ult-bar-shibuki" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- Main Workspace Grid -->
-    <main class="main-layout">
-      <!-- Left Sidebar: Nana & Shibuki Roster -->
-      <aside class="sidebar left-sidebar">
-        <div class="panel-card">
-          <div class="panel-header">
-            <h3><i data-lucide="users"></i> 파이터 선택</h3>
-            <span class="badge" id="selected-count-badge">선택: 2명</span>
-          </div>
-
-          <!-- Quick Action -->
-          <div class="roster-actions">
-            <button id="btn-select-both" class="btn btn-sm btn-primary btn-block">
-              <i data-lucide="swords"></i> 나나 vs 시부키 1:1 대결
-            </button>
-          </div>
-
-          <!-- Characters Roster List -->
-          <div class="character-grid" id="character-grid">
-            <!-- Dynamically populated via characters.js -->
-          </div>
-        </div>
-      </aside>
-
-      <!-- Center: 4-Corner Arena & Controls -->
+    <!-- Main Workspace (Centered Large Arena) -->
+    <main class="main-layout-reels">
+      <!-- Center: Big 1:1 Square Arena & Controls -->
       <section class="arena-section">
         <div class="canvas-wrapper" id="canvas-wrapper">
           <canvas id="battle-canvas"></canvas>
@@ -113,7 +175,7 @@
             </button>
           </div>
 
-          <!-- Speed Multipliers (Default 1x) -->
+          <!-- Speed Multipliers -->
           <div class="control-group speed-group">
             <span class="control-label"><i data-lucide="gauge"></i> 속도:</span>
             <div class="btn-group">
@@ -124,7 +186,7 @@
             </div>
           </div>
 
-          <!-- Skill Pause / Time Freeze Toggle -->
+          <!-- Skill Pause Toggle -->
           <div class="control-group toggle-group">
             <span class="control-label"><i data-lucide="pause-circle"></i> 스킬 연출 시 일시정지:</span>
             <label class="toggle-switch">
@@ -134,49 +196,6 @@
           </div>
         </div>
       </section>
-
-      <!-- Right Sidebar: Live Stats & Leaderboard -->
-      <aside class="sidebar right-sidebar">
-        <!-- Live Leaderboard -->
-        <div class="panel-card">
-          <div class="panel-header">
-            <h3><i data-lucide="bar-chart-2"></i> 실시간 상태</h3>
-            <span class="live-pulse">LIVE</span>
-          </div>
-          <div class="leaderboard-list" id="leaderboard-list">
-            <!-- Dynamically updated -->
-          </div>
-        </div>
-
-        <!-- Fighter Skill Guide Info Card -->
-        <div class="panel-card guide-card">
-          <div class="panel-header">
-            <h3><i data-lucide="zap"></i> 스킬 정보 & 기믹</h3>
-          </div>
-          <div class="guide-item">
-            <div class="guide-avatar-badge" style="background:#ff69b4;">🌸</div>
-            <div class="guide-info">
-              <strong>하나코 나나</strong>
-              <p>일반: [사랑이] 단발 / 궁극기: [사랑이] 16연발 뚜루루룰루 난사</p>
-            </div>
-          </div>
-          <div class="guide-item">
-            <div class="guide-avatar-badge" style="background:#a855f7;">🦊</div>
-            <div class="guide-info">
-              <strong>텐코 시부키</strong>
-              <p>일반: [뿔 똑, 똑 짤짤이] / 궁극기: [캥캥이 변신 & 폭풍 대쉬]</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Domain Footer Card -->
-        <div class="panel-card domain-card">
-          <div class="domain-badge">
-            <i data-lucide="globe"></i> <strong>hanakonana.cloud</strong>
-          </div>
-          <p class="domain-sub">스텔라이브 3기 하나코 나나 & 텐코 시부키 바운스 배틀</p>
-        </div>
-      </aside>
     </main>
   </div>
 

@@ -1,15 +1,14 @@
 ﻿/**
  * Main Game Controller
- * Manages simulation loop, top Minecraft HUD, 1:1 pixel-perfect canvas resolution,
- * and clean winner profile victory screen.
+ * 1:1 Pure Square Reels Arena with Real-time 50:50 Split VS Cooldown & HP Bars.
  */
 
 class GameApp {
   constructor() {
     this.canvas = document.getElementById('battle-canvas');
     this.ctx = this.canvas.getContext('2d');
-    this.canvasWidth = 800;
-    this.canvasHeight = 540;
+    this.canvasWidth = 600;
+    this.canvasHeight = 600;
 
     // Subsystems
     this.audio = new SoundEngine();
@@ -20,7 +19,6 @@ class GameApp {
 
     // Game State
     this.allCharacterData = STELLIVE_CHARACTERS;
-    this.selectedIds = new Set(['nana', 'shibuki']);
     this.fighters = [];
     this.isPlaying = false;
     this.isPaused = false;
@@ -37,43 +35,39 @@ class GameApp {
     window.addEventListener('resize', () => this.resizeCanvas());
 
     this.setupEventListeners();
-    this.renderCharacterRoster();
     this.resetFighters();
-    this.updateMinecraftHud();
-    this.updateLeaderboard();
+    this.updateVsHud();
 
-    // Start Simulation Loop
+    // Start Loop
     requestAnimationFrame((t) => this.loop(t));
   }
 
-  // 1:1 Pixel-Perfect Canvas Resolution (No Distortion or Stretching)
   resizeCanvas() {
-    const rect = this.canvas.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return;
+    const wrapper = document.getElementById('canvas-wrapper');
+    if (!wrapper) return;
+
+    const rect = wrapper.getBoundingClientRect();
+    const size = Math.floor(Math.min(rect.width, rect.height || rect.width));
+    if (size <= 0) return;
 
     const dpr = window.devicePixelRatio || 1;
-    this.canvasWidth = rect.width;
-    this.canvasHeight = rect.height;
+    this.canvasWidth = size;
+    this.canvasHeight = size;
 
-    this.canvas.width = Math.floor(rect.width * dpr);
-    this.canvas.height = Math.floor(rect.height * dpr);
-
+    this.canvas.width = Math.floor(size * dpr);
+    this.canvas.height = Math.floor(size * dpr);
     this.dpr = dpr;
+
     if (this.arena) {
       this.arena.resize(this.canvasWidth, this.canvasHeight);
     }
   }
 
   setupEventListeners() {
-    // 1. Start / Pause / Reset Buttons
     const btnStart = document.getElementById('btn-start');
     const btnStartText = document.getElementById('btn-start-text');
     btnStart.addEventListener('click', () => {
       if (!this.isPlaying) {
-        if (this.fighters.length < 2) {
-          alert('배틀을 시작하려면 최소 2명의 파이터를 선택해 주세요!');
-          return;
-        }
         this.isPlaying = true;
         this.isPaused = false;
         btnStartText.textContent = '일시 정지';
@@ -98,7 +92,7 @@ class GameApp {
       this.audio.playClick();
     });
 
-    // 2. Speed Preset Buttons (Default 1x)
+    // Speed Preset Buttons
     const speedButtons = document.querySelectorAll('.speed-btn');
     speedButtons.forEach(btn => {
       btn.addEventListener('click', () => {
@@ -109,7 +103,7 @@ class GameApp {
       });
     });
 
-    // 3. Skill Pause Toggle
+    // Skill Pause Toggle
     const toggleSkillPause = document.getElementById('toggle-skill-pause');
     if (toggleSkillPause) {
       toggleSkillPause.addEventListener('change', (e) => {
@@ -118,18 +112,7 @@ class GameApp {
       });
     }
 
-    // 4. Quick Roster Selection
-    const btnSelectBoth = document.getElementById('btn-select-both');
-    if (btnSelectBoth) {
-      btnSelectBoth.addEventListener('click', () => {
-        this.selectedIds = new Set(['nana', 'shibuki']);
-        this.renderCharacterRoster();
-        this.resetFighters();
-        this.audio.playClick();
-      });
-    }
-
-    // 5. Sound Toggle
+    // Sound Toggle
     const btnSound = document.getElementById('btn-sound');
     btnSound.addEventListener('click', () => {
       const isMuted = this.audio.toggleMute();
@@ -137,7 +120,7 @@ class GameApp {
       if (window.lucide) lucide.createIcons();
     });
 
-    // 6. Fullscreen Toggle
+    // Fullscreen Toggle
     const btnFullscreen = document.getElementById('btn-fullscreen');
     btnFullscreen.addEventListener('click', () => {
       if (!document.fullscreenElement) {
@@ -147,7 +130,7 @@ class GameApp {
       }
     });
 
-    // 7. Rematch Button
+    // Rematch Button
     const btnRematch = document.getElementById('btn-rematch');
     btnRematch.addEventListener('click', () => {
       document.getElementById('winner-overlay').classList.add('hidden');
@@ -159,60 +142,10 @@ class GameApp {
       document.getElementById('btn-start').classList.add('btn-warning');
     });
 
-    // 8. Cutin Event Listener
+    // Cutin Event Listener
     window.addEventListener('fighter-ult-cutin', (e) => {
       this.showUltCutin(e.detail.fighter, e.detail.ultName, e.detail.ultDesc, e.detail.shouldPause);
     });
-  }
-
-  renderCharacterRoster() {
-    const grid = document.getElementById('character-grid');
-    if (!grid) return;
-    grid.innerHTML = '';
-
-    const countBadge = document.getElementById('selected-count-badge');
-    if (countBadge) {
-      countBadge.textContent = `선택: ${this.selectedIds.size}명`;
-    }
-
-    this.allCharacterData.forEach(char => {
-      const isSelected = this.selectedIds.has(char.id);
-      const card = document.createElement('div');
-      card.className = `roster-card ${isSelected ? 'selected' : ''}`;
-      card.style.setProperty('--char-color', char.color);
-
-      card.innerHTML = `
-        <div class="roster-avatar-box" style="border-color: ${char.color};">
-          <img class="roster-avatar-img" src="${char.avatarUrl}" alt="${char.name}">
-        </div>
-        <div class="roster-info">
-          <div class="roster-title-row">
-            <span class="roster-name">${char.name}</span>
-            <span class="roster-group-tag">${char.groupName}</span>
-          </div>
-          <span class="roster-role">${char.role}</span>
-          <span class="roster-skill-tag">스킬: ${char.skill1Name}</span>
-        </div>
-        <div class="roster-check-box">
-          <i data-lucide="${isSelected ? 'check-circle' : 'circle'}"></i>
-        </div>
-      `;
-
-      card.addEventListener('click', () => {
-        if (this.selectedIds.has(char.id)) {
-          this.selectedIds.delete(char.id);
-        } else {
-          this.selectedIds.add(char.id);
-        }
-        this.renderCharacterRoster();
-        this.resetFighters();
-        this.audio.playClick();
-      });
-
-      grid.appendChild(card);
-    });
-
-    if (window.lucide) lucide.createIcons();
   }
 
   resetFighters() {
@@ -222,79 +155,128 @@ class GameApp {
     document.getElementById('winner-overlay').classList.add('hidden');
     document.getElementById('ult-cutin-overlay').classList.add('hidden');
 
-    const selectedList = this.allCharacterData.filter(c => this.selectedIds.has(c.id));
-    if (selectedList.length === 0) {
-      this.updateMinecraftHud();
-      this.updateLeaderboard();
-      return;
-    }
+    const nanaData = this.allCharacterData.find(c => c.id === 'nana') || this.allCharacterData[0];
+    const shibukiData = this.allCharacterData.find(c => c.id === 'shibuki') || this.allCharacterData[1];
 
-    const count = selectedList.length;
-    selectedList.forEach((char, index) => {
-      const offsetX = count === 2 ? (index === 0 ? -this.arena.halfW * 0.55 : this.arena.halfW * 0.55) : 0;
-      const x = this.arena.cx + offsetX;
-      const y = this.arena.cy;
+    // Left (Nana) & Right (Shibuki) Spawning
+    const spawnOffsetX = this.arena.halfSize * 0.55;
+    const nana = new Fighter(nanaData, this.arena.cx - spawnOffsetX, this.arena.cy);
+    const shibuki = new Fighter(shibukiData, this.arena.cx + spawnOffsetX, this.arena.cy);
 
-      const fighter = new Fighter(char, x, y);
-      this.fighters.push(fighter);
-    });
-
-    this.updateMinecraftHud();
-    this.updateLeaderboard();
+    this.fighters.push(nana, shibuki);
+    this.updateVsHud();
   }
 
-  // Top Minecraft-Style Health HUD (마인크래프트 하트 체력바)
-  updateMinecraftHud() {
-    const container = document.getElementById('mc-hearts-grid');
-    if (!container) return;
+  // Real-Time 50:50 Split VS Cooldown & Health HUD
+  updateVsHud() {
+    const nana = this.fighters.find(f => f.id === 'nana');
+    const shibuki = this.fighters.find(f => f.id === 'shibuki');
 
-    if (this.fighters.length === 0) {
-      container.innerHTML = `<div class="mc-empty-msg">좌측에서 파이터를 선택해 주세요!</div>`;
-      return;
-    }
+    // 1. Update Nana (Left Half)
+    if (nana) {
+      const hpPercent = Math.max(0, (nana.hp / nana.maxHp) * 100);
+      const hpEl = document.getElementById('hud-hp-nana');
+      const hpBar = document.getElementById('hud-hp-bar-nana');
+      const heartsEl = document.getElementById('hud-hearts-nana');
+      const cardEl = document.getElementById('vs-card-nana');
 
-    container.innerHTML = '';
+      if (hpEl) hpEl.textContent = nana.isDead ? '💀 K.O.' : `${nana.hp} / ${nana.maxHp} HP`;
+      if (hpBar) hpBar.style.width = `${hpPercent}%`;
+      if (cardEl) cardEl.classList.toggle('dead', nana.isDead);
 
-    this.fighters.forEach(f => {
-      const item = document.createElement('div');
-      item.className = `mc-hud-item ${f.isDead ? 'dead' : ''}`;
-      item.style.setProperty('--char-color', f.color);
-
-      let avatarHtml = '';
-      if (f.avatarImg && f.avatarImg.src) {
-        avatarHtml = `<img class="mc-avatar-img" src="${f.avatarImg.src}">`;
-      } else {
-        avatarHtml = `<span class="mc-avatar-emoji">${f.emoji}</span>`;
+      if (heartsEl) {
+        const fullCount = Math.ceil(hpPercent / 20);
+        let hStr = '';
+        for (let i = 0; i < 5; i++) {
+          hStr += i < fullCount ? '❤️' : '🖤';
+        }
+        heartsEl.innerHTML = hStr;
       }
 
-      const heartCount = 10;
-      const hpPercent = Math.max(0, f.hp / f.maxHp);
-      const activeHearts = Math.ceil(hpPercent * heartCount);
-
-      let heartsString = '';
-      for (let i = 0; i < heartCount; i++) {
-        if (i < activeHearts) {
-          heartsString += `<span class="mc-heart full">❤️</span>`;
+      // Skill 1 Cooldown Bar
+      const s1Percent = Math.min(100, Math.floor((nana.skill1Timer / nana.skill1MaxCd) * 100));
+      const s1Bar = document.getElementById('hud-s1-bar-nana');
+      const s1Status = document.getElementById('hud-s1-status-nana');
+      if (s1Bar) s1Bar.style.width = `${s1Percent}%`;
+      if (s1Status) {
+        if (s1Percent >= 100) {
+          s1Status.textContent = '🔥 READY!';
+          s1Status.className = 'cd-status ready';
         } else {
-          heartsString += `<span class="mc-heart empty">🖤</span>`;
+          const rem = Math.max(0, nana.skill1MaxCd - nana.skill1Timer);
+          s1Status.textContent = `${rem.toFixed(1)}s`;
+          s1Status.className = 'cd-status';
         }
       }
 
-      item.innerHTML = `
-        <div class="mc-item-header">
-          <div class="mc-avatar-wrap" style="border-color: ${f.color};">
-            ${avatarHtml}
-          </div>
-          <span class="mc-name">${f.name}</span>
-          <span class="mc-hp-num">${f.isDead ? '💀 K.O.' : `${f.hp} / ${f.maxHp}`}</span>
-        </div>
-        <div class="mc-hearts-row">
-          ${heartsString}
-        </div>
-      `;
+      // Ult Cooldown Bar
+      const ultPercent = Math.min(100, Math.floor((nana.ultTimer / nana.ultMaxCd) * 100));
+      const ultBar = document.getElementById('hud-ult-bar-nana');
+      const ultStatus = document.getElementById('hud-ult-status-nana');
+      if (ultBar) ultBar.style.width = `${ultPercent}%`;
+      if (ultStatus) {
+        if (ultPercent >= 100) {
+          s1Status.textContent = '🌟 READY!';
+          ultStatus.className = 'cd-status ready-gold';
+        } else {
+          ultStatus.textContent = `${ultPercent}%`;
+          ultStatus.className = 'cd-status';
+        }
+      }
+    }
 
-      container.appendChild(item);
-    });
+    // 2. Update Shibuki (Right Half)
+    if (shibuki) {
+      const hpPercent = Math.max(0, (shibuki.hp / shibuki.maxHp) * 100);
+      const hpEl = document.getElementById('hud-hp-shibuki');
+      const hpBar = document.getElementById('hud-hp-bar-shibuki');
+      const heartsEl = document.getElementById('hud-hearts-shibuki');
+      const cardEl = document.getElementById('vs-card-shibuki');
+
+      if (hpEl) hpEl.textContent = shibuki.isDead ? '💀 K.O.' : `${shibuki.hp} / ${shibuki.maxHp} HP`;
+      if (hpBar) hpBar.style.width = `${hpPercent}%`;
+      if (cardEl) cardEl.classList.toggle('dead', shibuki.isDead);
+
+      if (heartsEl) {
+        const fullCount = Math.ceil(hpPercent / 20);
+        let hStr = '';
+        for (let i = 0; i < 5; i++) {
+          hStr += i < fullCount ? '❤️' : '🖤';
+        }
+        heartsEl.innerHTML = hStr;
+      }
+
+      // Skill 1 Cooldown Bar
+      const s1Percent = Math.min(100, Math.floor((shibuki.skill1Timer / shibuki.skill1MaxCd) * 100));
+      const s1Bar = document.getElementById('hud-s1-bar-shibuki');
+      const s1Status = document.getElementById('hud-s1-status-shibuki');
+      if (s1Bar) s1Bar.style.width = `${s1Percent}%`;
+      if (s1Status) {
+        if (s1Percent >= 100) {
+          s1Status.textContent = '🔥 READY!';
+          s1Status.className = 'cd-status ready';
+        } else {
+          const rem = Math.max(0, shibuki.skill1MaxCd - shibuki.skill1Timer);
+          s1Status.textContent = `${rem.toFixed(1)}s`;
+          s1Status.className = 'cd-status';
+        }
+      }
+
+      // Ult Cooldown Bar
+      const ultPercent = Math.min(100, Math.floor((shibuki.ultTimer / shibuki.ultMaxCd) * 100));
+      const ultBar = document.getElementById('hud-ult-bar-shibuki');
+      const ultStatus = document.getElementById('hud-ult-status-shibuki');
+      if (ultBar) ultBar.style.width = `${ultPercent}%`;
+      if (ultStatus) {
+        if (ultPercent >= 100) {
+          ultStatus.textContent = '🌟 READY!';
+          ultStatus.className = 'cd-status ready-gold';
+        } else {
+          ultStatus.textContent = `${ultPercent}%`;
+          ultStatus.className = 'cd-status';
+        }
+      }
+    }
   }
 
   showUltCutin(fighter, skillName, skillDesc, shouldPause = true) {
@@ -329,36 +311,6 @@ class GameApp {
     }, 1000);
   }
 
-  updateLeaderboard() {
-    const list = document.getElementById('leaderboard-list');
-    if (!list) return;
-    list.innerHTML = '';
-
-    const sorted = [...this.fighters].sort((a, b) => {
-      if (a.isDead !== b.isDead) return a.isDead ? 1 : -1;
-      return b.hp - a.hp;
-    });
-
-    sorted.forEach((f, idx) => {
-      const item = document.createElement('div');
-      item.className = `leader-item ${f.isDead ? 'dead' : ''}`;
-      item.style.setProperty('--char-color', f.color);
-
-      const hpPercent = Math.max(0, (f.hp / f.maxHp) * 100);
-
-      item.innerHTML = `
-        <span class="leader-rank">#${idx + 1}</span>
-        <span class="leader-emoji">${f.emoji}</span>
-        <span class="leader-name">${f.name}</span>
-        <div class="leader-hp-bar">
-          <div class="leader-hp-fill" style="width: ${hpPercent}%; background: ${f.color};"></div>
-        </div>
-        <span class="leader-hp-val">${f.isDead ? 'K.O.' : `${f.hp} HP`}</span>
-      `;
-      list.appendChild(item);
-    });
-  }
-
   checkGameEnd() {
     if (!this.isPlaying) return;
 
@@ -371,7 +323,6 @@ class GameApp {
     }
   }
 
-  // Clean Victory Announcement with Winner's Profile Avatar
   declareWinner(winner) {
     this.isPlaying = false;
     this.audio.playVictory();
@@ -380,14 +331,12 @@ class GameApp {
     const imgEl = document.getElementById('winner-img');
     const nameEl = document.getElementById('winner-name');
 
-    // Display winner profile picture
     if (winner.avatarImg && winner.avatarImg.src) {
       imgEl.src = winner.avatarImg.src;
     } else if (winner.fullArtImg && winner.fullArtImg.src) {
       imgEl.src = winner.fullArtImg.src;
     }
 
-    // Clean text: e.g. "텐코 시부키 승리!" or "하나코 나나 승리!"
     nameEl.textContent = `${winner.name} 승리!`;
     overlay.classList.remove('hidden');
   }
@@ -397,7 +346,6 @@ class GameApp {
     const dt = Math.min(0.06, (currentTime - this.lastTime) / 1000);
     this.lastTime = currentTime;
 
-    // Handle Skill Freeze Pause
     if (this.pauseRemainingTimer > 0) {
       this.pauseRemainingTimer -= dt;
     } else if (this.isPlaying && !this.isPaused) {
@@ -414,15 +362,12 @@ class GameApp {
       // 3. Update Skills & Bullets
       this.skills.update(dt, this.arena, this.fighters, this.particles, this.audio, effSpeed);
 
-      // 4. Update Minecraft HUD & Leaderboard
-      this.updateMinecraftHud();
-      if (Math.random() < 0.1) {
-        this.updateLeaderboard();
-      }
-
-      // 5. Check Win Condition
+      // 4. Check Win Condition
       this.checkGameEnd();
     }
+
+    // Always update 50:50 VS HUD
+    this.updateVsHud();
 
     // Update Particles
     this.particles.update(dt, this.speedMultiplier);
@@ -445,7 +390,7 @@ class GameApp {
       this.ctx.translate(sx, sy);
     }
 
-    // 1. Draw 4-Corner Arena
+    // 1. Draw 1:1 Square Arena
     this.arena.render(this.ctx);
 
     // 2. Draw Active Skill Bullets & Horns
