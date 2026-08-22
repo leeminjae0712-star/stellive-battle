@@ -2,7 +2,7 @@
  * StelLive Characters Roster - Pro Balanced 3-Hero System
  * 1. 하나코 나나 (Hanako Nana) - Heavy Sniper Gunner
  * 2. 텐코 시부키 (Tenko Shibuki) - Rapid Poke & Fox Berserker (8.0s Fast Ult!)
- * 3. 유즈하 리코 (Yuzuha Riko) - Time Warden & Holy Sword (Map-Wide Strike & Chrono Stop)
+ * 3. 유즈하 리코 (Yuzuha Riko) - Holy Sword Drop & Stun Wall-Slam Smash
  * Domain: hanakonana.cloud
  */
 
@@ -97,10 +97,10 @@ const STELLIVE_CHARACTERS = [
     skill1Desc: '맵 한가운데에 거대한 성검을 투하하여 맵 전체에 착탄 35딜 + 3초간 12딜 전역 파동 방출!',
     skill1Cooldown: 3.8,
 
-    // Ultimate: Chrono Lock (Time Stop)
-    ultName: '시간 정지',
-    ultDesc: '2.8초간 전장의 모든 시간을 동결! 자신만 움직이며 공격력이 1.8배 폭증합니다!',
-    ultCooldown: 12.0,
+    // Ultimate: Stun & Colossal Wall-Slam Smash
+    ultName: '일도양단 벽쾅',
+    ultDesc: '적들을 기절(1.2초)시키고 초강력 일격(220딜)으로 날려 벽에 쾅 튕기며 100 추가 벽쾅 피해!',
+    ultCooldown: 10.5,
 
     avatarUrl: 'assets/riko_avatar.png',
     fullArtUrl: 'assets/riko_full.png',

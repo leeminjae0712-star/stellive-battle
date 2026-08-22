@@ -1,6 +1,5 @@
 /**
  * Main Game Controller - StelLive 3-Hero Battle Edition
- * Supports Nana, Shibuki, and Riko across 1v1 and 3-Way FFA.
  */
 
 class GameApp {
@@ -387,8 +386,8 @@ class GameApp {
           f.update(dt, this.arena, this.fighters, this.skills, this.audio, this.particles, effSpeed);
         }
 
-        // 2. Physics with Time Stop support
-        this.physics.update(dt, this.fighters, this.arena, this.audio, this.particles, effSpeed, this.skills);
+        // 2. Physics with Wall Slam support
+        this.physics.update(dt, this.fighters, this.arena, this.audio, this.particles, effSpeed);
 
         // 3. Update Skills & Bullets & Swords
         this.skills.update(dt, this.arena, this.fighters, this.particles, this.audio, effSpeed);
@@ -397,7 +396,7 @@ class GameApp {
         this.checkGameEnd();
       }
 
-      // 5. CRITICAL BUG FIX: ALWAYS UPDATE PARTICLES SO NUMBERS & TEXTS DECAY AND DISAPPEAR!
+      // 5. Always Update Particles so all texts/sparks fade away cleanly!
       if (this.particles) {
         this.particles.update(dt, effSpeed);
       }

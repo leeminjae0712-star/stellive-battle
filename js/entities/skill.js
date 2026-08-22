@@ -2,24 +2,18 @@
  * Skill Manager - Clean & Impactful Arcade Combat Engine
  * - Nana: Heavy Sniper Shot & Rapid Machine Gun
  * - Shibuki: Quick Horn Poke (2 horns) & Fox Berserk
- * - Riko: Jarvan E style Holy Sword Drop at Map Center (Clean Sword, Global AOE) & Time Stop
+ * - Riko: Jarvan E style Holy Sword Drop at Map Center (Clean Sword, Global AOE)
  */
 
 class SkillManager {
   constructor() {
     this.projectiles = [];
     this.swordDrops = [];
-    this.isTimeStopped = false;
-    this.timeStopTimer = 0;
-    this.timeStopOwner = null;
   }
 
   reset() {
     this.projectiles = [];
     this.swordDrops = [];
-    this.isTimeStopped = false;
-    this.timeStopTimer = 0;
-    this.timeStopOwner = null;
   }
 
   // ═══ 1. Nana: Heavy Sniper Shot [사랑이 사격] ═══
@@ -137,44 +131,12 @@ class SkillManager {
     }
   }
 
-  // ═══ 5. Riko: Chrono Lock [시간 정지] ═══
-  triggerTimeStop(fighter, duration = 2.8, soundEngine, particleSystem) {
-    this.isTimeStopped = true;
-    this.timeStopTimer = duration;
-    this.timeStopOwner = fighter;
-
-    try { if (soundEngine) soundEngine.playTimeStop(); } catch(e) {}
-    if (particleSystem) {
-      particleSystem.shake(8);
-      particleSystem.spawnDamageText(fighter.x, fighter.y - 36, '⏳ THE WORLD (시간 정지)!', 'ult', '#10b981');
-    }
-  }
-
   update(dt, arena, allFighters, particleSystem, soundEngine, speedMultiplier = 1) {
     const effSpeed = speedMultiplier;
-
-    // ── Update Time Stop State ──
-    if (this.isTimeStopped) {
-      this.timeStopTimer -= dt * effSpeed;
-
-      if (this.timeStopTimer <= 0) {
-        this.isTimeStopped = false;
-        this.timeStopOwner = null;
-        try { if (soundEngine) soundEngine.playTimeResume(); } catch(e) {}
-        if (particleSystem) {
-          particleSystem.shake(5);
-          particleSystem.spawnDamageText(arena.cx, arena.cy, '✨ 시간 재개!', 'buff', '#10b981');
-        }
-      }
-    }
 
     // ── Update Holy Sword Drops (Jarvan E Style Clean Planted Sword) ──
     for (let i = this.swordDrops.length - 1; i >= 0; i--) {
       const sw = this.swordDrops[i];
-
-      if (this.isTimeStopped && sw.owner !== this.timeStopOwner) {
-        continue;
-      }
 
       if (sw.state === 'falling') {
         sw.y += sw.vy * effSpeed;
@@ -193,7 +155,7 @@ class SkillManager {
           // Full Screen Map Attack: Hits all enemies on the map!
           for (const enemy of allFighters) {
             if (enemy === sw.owner || enemy.isDead) continue;
-            enemy.takeDamage(sw.impactDmg, sw.owner, particleSystem, 'crit', this);
+            enemy.takeDamage(sw.impactDmg, sw.owner, particleSystem, 'crit');
 
             if (particleSystem) {
               particleSystem.spawnSlash(enemy.x, enemy.y, Math.PI / 4, '#10b981', 45);
@@ -215,7 +177,7 @@ class SkillManager {
           // Hits ALL enemies anywhere across the map
           for (const enemy of allFighters) {
             if (enemy === sw.owner || enemy.isDead) continue;
-            enemy.takeDamage(sw.pulseDmg, sw.owner, particleSystem, 'normal', this);
+            enemy.takeDamage(sw.pulseDmg, sw.owner, particleSystem, 'normal');
 
             if (particleSystem) {
               particleSystem.spawnSlash(enemy.x, enemy.y, Math.random() * Math.PI, '#10b981', 35);
@@ -236,10 +198,6 @@ class SkillManager {
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
 
-      if (this.isTimeStopped && p.owner !== this.timeStopOwner) {
-        continue;
-      }
-
       p.x += p.vx * effSpeed;
       p.y += p.vy * effSpeed;
       p.life -= dt * effSpeed;
@@ -259,7 +217,7 @@ class SkillManager {
         if (dist <= enemy.radius + p.radius) {
           hit = true;
           const isCrit = p.type === 'heavy_bullet' || Math.random() < 0.2;
-          enemy.takeDamage(p.damage, p.owner, particleSystem, isCrit ? 'crit' : 'normal', this);
+          enemy.takeDamage(p.damage, p.owner, particleSystem, isCrit ? 'crit' : 'normal');
 
           try { if (soundEngine) soundEngine.playHit(); } catch(e) {}
           if (particleSystem) {
@@ -291,7 +249,7 @@ class SkillManager {
   render(ctx) {
     ctx.save();
 
-    // ── 1. Render Planted / Falling Holy Swords (Jarvan E Style Clean Sword) ──
+    // ── 1. Render Planted / Falling Holy Swords ──
     for (const sw of this.swordDrops) {
       ctx.save();
       ctx.translate(sw.x, sw.y);
@@ -363,14 +321,6 @@ class SkillManager {
         ctx.fill();
       }
 
-      ctx.restore();
-    }
-
-    // ── 3. Time Stop Subtle Filter ──
-    if (this.isTimeStopped) {
-      ctx.save();
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       ctx.restore();
     }
 

@@ -2,7 +2,7 @@
  * Fighter Entity - Ultra Clean & Crisp 3-Hero System
  * 1. 하나코 나나 (Nana) - Heavy Sniper Gunner (160 dmg shot / 16-burst ult)
  * 2. 텐코 시부키 (Shibuki) - Rapid Poke (30x2) & 8.0s Fast Berserker Fox
- * 3. 유즈하 리코 (Riko) - Jarvan E style Holy Sword Drop at Center & 2.8s Time Stop
+ * 3. 유즈하 리코 (Riko) - Stun & 220 Big Smash + 100 Wall-Slam Combo
  */
 
 class Fighter {
@@ -43,8 +43,13 @@ class Fighter {
 
     this.ultName = config.ultName || '궁극기';
     this.ultDesc = config.ultDesc || '';
-    this.ultMaxCd = config.ultCooldown || 12.0;
+    this.ultMaxCd = config.ultCooldown || 10.5;
     this.ultTimer = 0;
+
+    // Stun & Wall Slam
+    this.stunTimer = 0;
+    this.isWallSlamming = false;
+    this.wallSlamAttacker = null;
 
     // Clash Damage Throttle
     this.clashCooldown = 0;
@@ -88,13 +93,16 @@ class Fighter {
   update(dt, arena, allFighters, skillManager, soundEngine, particleSystem, speedMultiplier = 1) {
     if (this.isDead) return;
 
-    // ── Time Stop Freeze Check ──
-    const isFrozenInTime = skillManager && skillManager.isTimeStopped && skillManager.timeStopOwner !== this;
-    if (isFrozenInTime) {
-      return;
+    const effDt = dt * speedMultiplier;
+
+    // ── Stun State Check ──
+    if (this.stunTimer > 0) {
+      this.stunTimer -= effDt;
+      this.vx *= 0.8;
+      this.vy *= 0.8;
+      return; // Stunned!
     }
 
-    const effDt = dt * speedMultiplier;
     const nearestEnemy = this.findNearestEnemy(allFighters);
 
     // Aim toward nearest enemy
@@ -175,22 +183,7 @@ class Fighter {
       }
     }
 
-    // ── 4. Riko Time Stop Slash ──
-    if (skillManager && skillManager.isTimeStopped && skillManager.timeStopOwner === this) {
-      if (nearestEnemy) {
-        const dist = Math.hypot(nearestEnemy.x - this.x, nearestEnemy.y - this.y);
-        if (dist < 130 && Math.random() < 0.3) {
-          this.swordSlashTimer = 0.25;
-          try { if (soundEngine) soundEngine.playSlash(); } catch(e) {}
-          if (particleSystem) {
-            particleSystem.spawnSlash(nearestEnemy.x, nearestEnemy.y, Math.random() * Math.PI, '#10b981', 50);
-          }
-          nearestEnemy.takeDamage(45, this, particleSystem, 'crit', skillManager);
-        }
-      }
-    }
-
-    // ── 5. Cooldown Charging & Auto-Cast ──
+    // ── 4. Cooldown Charging & Auto-Cast ──
     this.skill1Timer += effDt;
     this.ultTimer += effDt;
 
@@ -204,13 +197,9 @@ class Fighter {
       this.ultTimer = 0;
     }
 
-    // ── 6. Movement ──
-    let speedMult = speedMultiplier;
-    if (skillManager && skillManager.isTimeStopped && skillManager.timeStopOwner === this) {
-      speedMult *= 1.5;
-    }
-    this.x += this.vx * speedMult;
-    this.y += this.vy * speedMult;
+    // ── 5. Movement ──
+    this.x += this.vx * speedMultiplier;
+    this.y += this.vy * speedMultiplier;
   }
 
   triggerSkill1(enemy, skillManager, soundEngine, particleSystem, arena) {
@@ -244,7 +233,7 @@ class Fighter {
   }
 
   triggerUltimate(allFighters, skillManager, soundEngine, particleSystem, arena) {
-    if (this.isDead || !skillManager) return;
+    if (this.isDead) return;
     const enemy = this.findNearestEnemy(allFighters);
 
     try { if (soundEngine) soundEngine.playUlt(); } catch(e) {}
@@ -278,13 +267,45 @@ class Fighter {
       }
 
     } else if (this.id === 'riko') {
-      skillManager.triggerTimeStop(this, 2.8, soundEngine, particleSystem);
-      this.invulnerableTimer = 1.0;
+      // ═══ Riko Stun & Colossal Smash + Wall Slam ═══
+      // 1. Stun all enemies for 1.2s
+      for (const target of allFighters) {
+        if (target === this || target.isDead) continue;
+        target.stunTimer = 1.2;
+        target.vx = 0;
+        target.vy = 0;
+        if (particleSystem) {
+          particleSystem.spawnDamageText(target.x, target.y - 35, '💫 STUN (기절)!', 'skill', '#ffd700');
+        }
+      }
 
+      // 2. Smash nearest enemy with 220 massive damage and send them flying into the wall!
       if (enemy) {
+        this.swordSlashTimer = 0.5;
+        this.invulnerableTimer = 0.6;
+
+        // Teleport/Dash directly in front of enemy
         const angle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
-        this.vx = Math.cos(angle) * this.baseSpeed * 2.2;
-        this.vy = Math.sin(angle) * this.baseSpeed * 2.2;
+        this.x = enemy.x - Math.cos(angle) * 60;
+        this.y = enemy.y - Math.sin(angle) * 60;
+
+        // Big Hit: 220 DMG!
+        enemy.takeDamage(220, this, particleSystem, 'crit');
+
+        // Launch enemy into wall at high velocity
+        const slamSpeed = 30;
+        enemy.vx = Math.cos(angle) * slamSpeed;
+        enemy.vy = Math.sin(angle) * slamSpeed;
+        enemy.isWallSlamming = true;
+        enemy.wallSlamAttacker = this;
+
+        if (particleSystem) {
+          particleSystem.shake(12);
+          particleSystem.spawnSlash(enemy.x, enemy.y, angle + Math.PI / 4, '#10b981', 80);
+          particleSystem.spawnSlash(enemy.x, enemy.y, angle - Math.PI / 4, '#34d399', 80);
+          particleSystem.spawnSparks(enemy.x, enemy.y, '#10b981', 14, 5);
+        }
+        try { if (soundEngine) soundEngine.playSlash(); } catch(e) {}
       }
     }
   }
@@ -301,15 +322,10 @@ class Fighter {
     }
   }
 
-  takeDamage(amount, attacker, particleSystem, type = 'normal', skillManager = null) {
+  takeDamage(amount, attacker, particleSystem, type = 'normal') {
     if (this.isDead || this.invulnerableTimer > 0) return 0;
 
     let finalDmg = Math.max(3, Math.floor(amount - this.def * 0.12));
-
-    const isAttackerRikoTimeStopped = attacker && attacker.id === 'riko' && skillManager && skillManager.isTimeStopped;
-    if (isAttackerRikoTimeStopped) {
-      finalDmg = Math.floor(finalDmg * 1.8);
-    }
 
     this.hp -= finalDmg;
 
@@ -401,6 +417,14 @@ class Fighter {
         ctx.drawImage(this.swordImg, -12, -45, 24, 80);
         ctx.restore();
       }
+    }
+
+    // ── Stun Effect (Stars above head) ──
+    if (this.stunTimer > 0) {
+      const starAngle = Date.now() * 0.01;
+      ctx.font = '16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('💫', Math.cos(starAngle) * 20, -this.radius - 30);
     }
 
     // ── Ultimate Charge Ring ──

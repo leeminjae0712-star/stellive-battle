@@ -1,8 +1,5 @@
 /**
- * Physics Engine - Clean, Smooth & Clutter-Free
- * - Body clash damage is strictly throttled (once per 0.45s)
- * - Safe unstick separation
- * - Time Stop freeze check
+ * Physics Engine - Clean, Smooth & Wall-Slam Enabled
  */
 
 class PhysicsEngine {
@@ -10,20 +7,21 @@ class PhysicsEngine {
     this.restitution = 1.0;
   }
 
-  update(dt, fighters, arena, soundEngine, particleSystem, speedMultiplier = 1, skillManager = null) {
+  update(dt, fighters, arena, soundEngine, particleSystem, speedMultiplier = 1) {
     if (!arena || fighters.length === 0) return;
 
     // 1. Resolve Collisions
-    this.resolveFighterCollisions(fighters, soundEngine, particleSystem, skillManager);
+    this.resolveFighterCollisions(fighters, soundEngine, particleSystem);
 
-    // 2. Resolve Wall Bounces
-    this.resolveArenaCollisions(fighters, arena, soundEngine, particleSystem, skillManager);
+    // 2. Resolve Wall Bounces & Wall Slam Damage
+    this.resolveArenaCollisions(fighters, arena, soundEngine, particleSystem);
 
-    // 3. Normalization (Only for non-frozen fighters)
+    // 3. Normalization (Only for non-stunned fighters)
     for (const f of fighters) {
-      if (f.isDead) continue;
+      if (f.isDead || f.stunTimer > 0) continue;
 
-      if (skillManager && skillManager.isTimeStopped && skillManager.timeStopOwner !== f) {
+      if (f.isWallSlamming) {
+        // Maintain high slam speed until hitting a wall
         continue;
       }
 
@@ -40,7 +38,7 @@ class PhysicsEngine {
     }
   }
 
-  resolveFighterCollisions(fighters, soundEngine, particleSystem, skillManager) {
+  resolveFighterCollisions(fighters, soundEngine, particleSystem) {
     for (let i = 0; i < fighters.length; i++) {
       const f1 = fighters[i];
       if (f1.isDead) continue;
@@ -58,33 +56,26 @@ class PhysicsEngine {
           const nx = dx / dist, ny = dy / dist;
           const overlap = minDist - dist + 2.5;
 
-          const f1Frozen = skillManager && skillManager.isTimeStopped && skillManager.timeStopOwner !== f1;
-          const f2Frozen = skillManager && skillManager.isTimeStopped && skillManager.timeStopOwner !== f2;
-
-          if (!f1Frozen) {
-            f1.x -= nx * (f2Frozen ? overlap : overlap * 0.5);
-            f1.y -= ny * (f2Frozen ? overlap : overlap * 0.5);
-          }
-          if (!f2Frozen) {
-            f2.x += nx * (f1Frozen ? overlap : overlap * 0.5);
-            f2.y += ny * (f1Frozen ? overlap : overlap * 0.5);
-          }
+          f1.x -= nx * overlap * 0.5;
+          f1.y -= ny * overlap * 0.5;
+          f2.x += nx * overlap * 0.5;
+          f2.y += ny * overlap * 0.5;
 
           const rvx = f2.vx - f1.vx, rvy = f2.vy - f1.vy;
           const velN = rvx * nx + rvy * ny;
 
           if (velN < 0) {
             const imp = -(1 + this.restitution) * velN / 2;
-            if (!f1Frozen) { f1.vx -= imp * nx; f1.vy -= imp * ny; }
-            if (!f2Frozen) { f2.vx += imp * nx; f2.vy += imp * ny; }
+            f1.vx -= imp * nx; f1.vy -= imp * ny;
+            f2.vx += imp * nx; f2.vy += imp * ny;
           } else {
-            if (!f1Frozen) { f1.vx -= nx * 2.0; f1.vy -= ny * 2.0; }
-            if (!f2Frozen) { f2.vx += nx * 2.0; f2.vy += ny * 2.0; }
+            f1.vx -= nx * 2.0; f1.vy -= ny * 2.0;
+            f2.vx += nx * 2.0; f2.vy += ny * 2.0;
           }
 
           // Fox scratch on contact
-          if (f1.isFoxTransformed && !f1Frozen) f1.applyFoxScratch(f2, particleSystem);
-          if (f2.isFoxTransformed && !f2Frozen) f2.applyFoxScratch(f1, particleSystem);
+          if (f1.isFoxTransformed) f1.applyFoxScratch(f2, particleSystem);
+          if (f2.isFoxTransformed) f2.applyFoxScratch(f1, particleSystem);
 
           // Throttled Clash Damage
           if (f1.clashCooldown <= 0 && f2.clashCooldown <= 0) {
@@ -92,8 +83,8 @@ class PhysicsEngine {
             f2.clashCooldown = 0.45;
 
             const clashDmg = Math.max(4, Math.floor(Math.hypot(f1.vx - f2.vx, f1.vy - f2.vy) * 0.8));
-            f1.takeDamage(clashDmg, f2, particleSystem, 'normal', skillManager);
-            f2.takeDamage(clashDmg, f1, particleSystem, 'normal', skillManager);
+            f1.takeDamage(clashDmg, f2, particleSystem, 'normal');
+            f2.takeDamage(clashDmg, f1, particleSystem, 'normal');
 
             if (particleSystem) {
               const mx = (f1.x + f2.x) / 2, my = (f1.y + f2.y) / 2;
@@ -106,12 +97,9 @@ class PhysicsEngine {
     }
   }
 
-  resolveArenaCollisions(fighters, arena, soundEngine, particleSystem, skillManager) {
+  resolveArenaCollisions(fighters, arena, soundEngine, particleSystem) {
     for (const f of fighters) {
       if (f.isDead) continue;
-      if (skillManager && skillManager.isTimeStopped && skillManager.timeStopOwner !== f) {
-        continue;
-      }
 
       let hitWall = false;
 
@@ -129,7 +117,24 @@ class PhysicsEngine {
         f.y = arena.bottom - f.radius; f.vy = -Math.abs(f.vy);
         if (Math.abs(f.vy) < 1) f.vy = -2; hitWall = true;
       }
-      if (hitWall && particleSystem) particleSystem.spawnSparks(f.x, f.y, f.color, 2, 2);
+
+      if (hitWall) {
+        // Check for Wall Slam!
+        if (f.isWallSlamming) {
+          f.isWallSlamming = false;
+          const slamDmg = 100;
+          f.takeDamage(slamDmg, f.wallSlamAttacker || null, particleSystem, 'crit');
+
+          if (particleSystem) {
+            particleSystem.shake(12);
+            particleSystem.spawnSparks(f.x, f.y, '#ef4444', 16, 6);
+            particleSystem.spawnDamageText(f.x, f.y - 20, '💥 WALL SLAM (벽쾅 100딜)!', 'crit', '#ef4444');
+          }
+          try { if (soundEngine) soundEngine.playClash(); } catch(e) {}
+        } else {
+          if (particleSystem) particleSystem.spawnSparks(f.x, f.y, f.color, 2, 2);
+        }
+      }
     }
   }
 }

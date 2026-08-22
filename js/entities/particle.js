@@ -1,6 +1,5 @@
 /**
  * Particle & Visual Effects Engine - Zero Residual Clutter Edition
- * Guarantees that damage numbers, badges, and sparks strictly decay and disappear within ~0.6s.
  */
 
 class ParticleSystem {
@@ -19,7 +18,7 @@ class ParticleSystem {
   }
 
   shake(amount = 4) {
-    this.screenShake = Math.min(this.screenShake + amount, 12);
+    this.screenShake = Math.min(this.screenShake + amount, 14);
   }
 
   spawnSparks(x, y, color = '#ffffff', count = 5, speed = 3) {
@@ -35,8 +34,7 @@ class ParticleSystem {
         radius: Math.random() * 2 + 1.5,
         color,
         alpha: 1,
-        life: 1,
-        decay: 0.08 // Disappears in ~0.2s
+        decay: 0.08
       });
     }
   }
@@ -51,12 +49,11 @@ class ParticleSystem {
       radius: radius * 0.5,
       color,
       alpha: 0.5,
-      life: 1,
-      decay: 0.12 // Quick fade
+      decay: 0.12
     });
   }
 
-  spawnSlash(x, y, angle, color = '#10b981', length = 50) {
+  spawnSlash(x, y, angle, color = '#10b981', length = 55) {
     if (this.slashes.length > 4) this.slashes.shift();
     this.slashes.push({
       x,
@@ -65,7 +62,7 @@ class ParticleSystem {
       length,
       color,
       alpha: 1,
-      decay: 0.15 // Disappears fast
+      decay: 0.14
     });
   }
 
@@ -80,7 +77,7 @@ class ParticleSystem {
         length: 35,
         color,
         alpha: 1,
-        decay: 0.15
+        decay: 0.14
       });
     }
   }
@@ -90,7 +87,6 @@ class ParticleSystem {
   }
 
   spawnDamageNumber(x, y, amount, type = 'normal') {
-    // Keep max 6 numbers to prevent screen flood
     if (this.damageTexts.length > 6) {
       this.damageTexts.shift();
     }
@@ -100,11 +96,11 @@ class ParticleSystem {
     let color = '#ffffff';
 
     if (type === 'crit') {
-      scale = 1.3;
+      scale = 1.35;
       color = '#fbbf24';
       text = `💥 ${amount}`;
     } else if (type === 'ult') {
-      scale = 1.4;
+      scale = 1.45;
       color = '#ffd700';
       text = `★ ${amount}`;
     }
@@ -117,7 +113,7 @@ class ParticleSystem {
       color,
       scale,
       alpha: 1,
-      decay: 0.05 // Disappears in ~0.35s
+      decay: 0.05
     });
   }
 
@@ -132,9 +128,9 @@ class ParticleSystem {
       vy: -1.4,
       text,
       color,
-      scale: 1.1,
+      scale: 1.15,
       alpha: 1,
-      decay: 0.055 // Disappears in ~0.3s
+      decay: 0.05
     });
   }
 
