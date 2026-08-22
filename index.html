@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>스텔라이브 배틀: 나나 vs 시부키 - hanakonana.cloud</title>
+  <title>스텔라이브 배틀: 나나 vs 시부키 vs 리코 - hanakonana.cloud</title>
   <link rel="stylesheet" href="css/style.css">
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -16,8 +16,12 @@
     <!-- Header -->
     <header class="game-header">
       <div class="logo-area">
-        <span class="badge-tag">Reels 1v1 Battle</span>
-        <h1 class="logo-title"><span class="highlight">스텔라이브</span> 배틀</h1>
+        <span class="badge-tag">StelLive 3-Hero Battle</span>
+        <h1 class="logo-title">
+          <span class="highlight-nana">나나</span> vs 
+          <span class="highlight-shibuki">시부키</span> vs 
+          <span class="highlight-riko">리코</span>
+        </h1>
         <span class="sub-domain">hanakonana.cloud</span>
       </div>
 
@@ -31,100 +35,20 @@
       </div>
     </header>
 
-    <!-- Top 50:50 Split VS Cooldown & Health HUD -->
-    <section class="vs-hud-container" id="vs-hud">
-      <!-- Left: Hanako Nana -->
-      <div class="vs-fighter-card nana-card" id="vs-card-nana">
-        <div class="vs-profile-row">
-          <div class="vs-avatar-box">
-            <img src="assets/nana_avatar.png" alt="하나코 나나">
-          </div>
-          <div class="vs-name-box">
-            <span class="vs-fighter-name">하나코 나나</span>
-            <span class="vs-hp-text" id="hud-hp-nana">1400 / 1400 HP</span>
-          </div>
-        </div>
-
-        <!-- HP Bar & Hearts -->
-        <div class="vs-bar-wrap">
-          <div class="vs-bar-bg">
-            <div class="vs-bar-fill hp-fill" id="hud-hp-bar-nana" style="width: 100%;"></div>
-          </div>
-          <div class="vs-hearts-row" id="hud-hearts-nana">❤️❤️❤️❤️❤️</div>
-        </div>
-
-        <!-- Skill 1 & Ult Cooldown Bars -->
-        <div class="vs-cooldowns-grid">
-          <div class="cd-row">
-            <div class="cd-label-row">
-              <span class="cd-name">🌸 사랑이 사격</span>
-              <span class="cd-status" id="hud-s1-status-nana">READY!</span>
-            </div>
-            <div class="cd-bar-bg">
-              <div class="cd-bar-fill s1-fill" id="hud-s1-bar-nana" style="width: 100%;"></div>
-            </div>
-          </div>
-
-          <div class="cd-row">
-            <div class="cd-label-row">
-              <span class="cd-name">⚡ 사랑이 난사</span>
-              <span class="cd-status" id="hud-ult-status-nana">0%</span>
-            </div>
-            <div class="cd-bar-bg">
-              <div class="cd-bar-fill ult-fill" id="hud-ult-bar-nana" style="width: 0%;"></div>
-            </div>
-          </div>
-        </div>
+    <!-- Matchup Mode Selector -->
+    <div class="mode-selector-bar">
+      <span class="mode-label"><i data-lucide="swords"></i> 대전 모드:</span>
+      <div class="mode-btn-group">
+        <button class="mode-btn" data-mode="nana-vs-shibuki">🌸 나나 vs 🦊 시부키</button>
+        <button class="mode-btn" data-mode="nana-vs-riko">🌸 나나 vs ⚔️ 리코</button>
+        <button class="mode-btn" data-mode="shibuki-vs-riko">🦊 시부키 vs ⚔️ 리코</button>
+        <button class="mode-btn active" data-mode="all-3-way">🔥 3인 대난투 (전원 참가)</button>
       </div>
+    </div>
 
-      <!-- VS Center Badge -->
-      <div class="vs-divider">
-        <div class="vs-badge">VS</div>
-      </div>
-
-      <!-- Right: Tenko Shibuki -->
-      <div class="vs-fighter-card shibuki-card" id="vs-card-shibuki">
-        <div class="vs-profile-row reverse">
-          <div class="vs-avatar-box">
-            <img src="assets/shibuki_avatar.png" alt="텐코 시부키">
-          </div>
-          <div class="vs-name-box right-align">
-            <span class="vs-fighter-name">텐코 시부키</span>
-            <span class="vs-hp-text" id="hud-hp-shibuki">1600 / 1600 HP</span>
-          </div>
-        </div>
-
-        <!-- HP Bar & Hearts -->
-        <div class="vs-bar-wrap">
-          <div class="vs-bar-bg">
-            <div class="vs-bar-fill hp-fill shibuki-hp" id="hud-hp-bar-shibuki" style="width: 100%;"></div>
-          </div>
-          <div class="vs-hearts-row right-align" id="hud-hearts-shibuki">❤️❤️❤️❤️❤️</div>
-        </div>
-
-        <!-- Skill 1 & Ult Cooldown Bars -->
-        <div class="vs-cooldowns-grid">
-          <div class="cd-row">
-            <div class="cd-label-row">
-              <span class="cd-name">🦊 뿔 발사</span>
-              <span class="cd-status" id="hud-s1-status-shibuki">READY!</span>
-            </div>
-            <div class="cd-bar-bg">
-              <div class="cd-bar-fill s1-fill shibuki-s1" id="hud-s1-bar-shibuki" style="width: 100%;"></div>
-            </div>
-          </div>
-
-          <div class="cd-row">
-            <div class="cd-label-row">
-              <span class="cd-name">🌟 캥캥이</span>
-              <span class="cd-status" id="hud-ult-status-shibuki">0%</span>
-            </div>
-            <div class="cd-bar-bg">
-              <div class="cd-bar-fill ult-fill" id="hud-ult-bar-shibuki" style="width: 0%;"></div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <!-- Dynamic Top VS HUD Container -->
+    <section class="vs-hud-container mode-ffa" id="vs-hud">
+      <!-- Injected via JavaScript -->
     </section>
 
     <!-- Main Workspace (Centered Giant Arena) -->
@@ -152,9 +76,9 @@
           <div id="winner-overlay" class="winner-overlay hidden">
             <div class="winner-card">
               <div class="winner-avatar-wrap">
-                <img id="winner-img" class="winner-avatar-img" src="assets/shibuki_avatar.png" alt="Winner Profile">
+                <img id="winner-img" class="winner-avatar-img" src="assets/riko_avatar.png" alt="Winner Profile">
               </div>
-              <h2 id="winner-name" class="winner-name">텐코 시부키 승리!</h2>
+              <h2 id="winner-name" class="winner-name">유즈하 리코 승리!</h2>
               <div class="winner-actions">
                 <button id="btn-rematch" class="btn btn-primary btn-lg">
                   <i data-lucide="rotate-ccw"></i> 다시 시작
@@ -208,4 +132,3 @@
   </script>
 </body>
 </html>
-

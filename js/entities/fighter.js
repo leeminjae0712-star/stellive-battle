@@ -1,7 +1,8 @@
 ﻿/**
- * Fighter Entity - Pro Balanced
- * Nana: Slow, heavy shots. Her gun booms and you feel it.
- * Shibuki: Fast, constant horn pokes. Death by a thousand cuts.
+ * Fighter Entity - Pro Balanced 3-Hero System
+ * 1. 하나코 나나 (Nana) - Heavy Sniper Gunslinger (160 dmg shot / 16-burst ult)
+ * 2. 텐코 시부키 (Shibuki) - Rapid Poke (38x2) & 8.0s Fast Berserker Fox
+ * 3. 유즈하 리코 (Riko) - Holy Sword Drop (Jarvan E style) & 2.8s Time Stop
  */
 
 class Fighter {
@@ -13,7 +14,7 @@ class Fighter {
     this.groupName = config.groupName || 'StelLive';
     this.role = config.role || 'Fighter';
     this.title = config.title || '';
-    this.color = config.color || '#a855f7';
+    this.color = config.color || '#10b981';
     this.glowColor = config.glowColor || this.color;
     this.emoji = config.emoji || '⭐';
 
@@ -37,15 +38,15 @@ class Fighter {
 
     this.skillType = config.skillType;
     this.skill1Name = config.skill1Name || '스킬 1';
-    this.skill1MaxCd = config.skill1Cooldown || 3.0;
-    this.skill1Timer = 0; // Start at 0 — must charge first!
+    this.skill1MaxCd = config.skill1Cooldown || 3.5;
+    this.skill1Timer = 0;
 
     this.ultName = config.ultName || '궁극기';
     this.ultDesc = config.ultDesc || '';
-    this.ultMaxCd = config.ultCooldown || 14.0;
-    this.ultTimer = 0; // Start at 0 — must charge first!
+    this.ultMaxCd = config.ultCooldown || 13.0;
+    this.ultTimer = 0;
 
-    // Nana Machine Gun
+    // Nana Machine Gun ("사랑이 난사")
     this.aimAngle = initialAngle;
     this.muzzleFlashTimer = 0;
     this.isMachineGunning = false;
@@ -54,7 +55,7 @@ class Fighter {
     this.machineGunInterval = 0.08;
     this.machineGunBulletsLeft = 0;
 
-    // Shibuki Fox Transform
+    // Shibuki Fox Transform ("캥캥이")
     this.isFoxTransformed = false;
     this.foxTransformTimer = 0;
     this.foxMaxDuration = 3.5;
@@ -62,9 +63,13 @@ class Fighter {
     this.scratchCooldown = 0;
     this.pendingHorns = [];
 
+    // Riko Holy Sword & Slash State
+    this.swordSlashTimer = 0;
+    this.swordAngle = 0;
+
     this.invulnerableTimer = 0;
 
-    // Images
+    // Asset Images
     this.avatarImg = null;
     if (config.avatarUrl) { this.avatarImg = new Image(); this.avatarImg.src = config.avatarUrl; }
     this.gunImg = null;
@@ -73,14 +78,24 @@ class Fighter {
     if (config.foxImg) { this.foxImg = new Image(); this.foxImg.src = config.foxImg; }
     this.hornImg = null;
     if (config.hornImg) { this.hornImg = new Image(); this.hornImg.src = config.hornImg; }
+    this.swordImg = null;
+    if (config.swordImg) { this.swordImg = new Image(); this.swordImg.src = config.swordImg; }
   }
 
   update(dt, arena, allFighters, skillManager, soundEngine, particleSystem, speedMultiplier = 1) {
     if (this.isDead) return;
 
+    // ── Time Stop Freeze Check ──
+    // If Time Stop is active and this fighter is NOT the owner, freeze completely!
+    const isFrozenInTime = skillManager && skillManager.isTimeStopped && skillManager.timeStopOwner !== this;
+    if (isFrozenInTime) {
+      return; // Do not move, do not reduce cooldowns, do not cast!
+    }
+
     const effDt = dt * speedMultiplier;
     const nearestEnemy = this.findNearestEnemy(allFighters);
 
+    // Aim toward nearest enemy
     if (nearestEnemy) {
       this.aimAngle = Math.atan2(nearestEnemy.y - this.y, nearestEnemy.x - this.x);
     } else {
@@ -88,9 +103,10 @@ class Fighter {
     }
 
     if (this.muzzleFlashTimer > 0) this.muzzleFlashTimer -= effDt;
+    if (this.swordSlashTimer > 0) this.swordSlashTimer -= effDt;
     if (this.invulnerableTimer > 0) this.invulnerableTimer -= effDt;
 
-    // ── Nana Machine Gun Burst ──
+    // ── 1. Nana Machine Gun Burst ──
     if (this.isMachineGunning) {
       this.machineGunTimer -= effDt;
       this.machineGunNextShot -= effDt;
@@ -115,14 +131,13 @@ class Fighter {
       }
     }
 
-    // ── Shibuki Fox Form ──
+    // ── 2. Shibuki Fox Form ──
     if (this.isFoxTransformed) {
       this.foxTransformTimer -= effDt;
       this.scratchCooldown = Math.max(0, this.scratchCooldown - effDt);
       this.foxDashCooldown -= effDt;
       this.radius = this.baseRadius * 1.3;
 
-      // Periodic dash toward enemy
       if (this.foxDashCooldown <= 0 && nearestEnemy) {
         this.foxDashCooldown = 0.9;
         const dashAngle = Math.atan2(nearestEnemy.y - this.y, nearestEnemy.x - this.x);
@@ -156,7 +171,7 @@ class Fighter {
       this.radius = this.baseRadius;
     }
 
-    // ── Shibuki Pending Horn Queue ──
+    // ── 3. Shibuki Pending Horn Queue ──
     if (this.pendingHorns.length > 0) {
       for (let i = this.pendingHorns.length - 1; i >= 0; i--) {
         const item = this.pendingHorns[i];
@@ -170,12 +185,29 @@ class Fighter {
       }
     }
 
-    // ── Cooldown Charging & Auto-Cast ──
+    // ── 4. Riko Time Stop Slash Bonus Movement ──
+    if (skillManager && skillManager.isTimeStopped && skillManager.timeStopOwner === this) {
+      // Free Time Stop Owner movement & periodic sword slash trails
+      if (nearestEnemy) {
+        const dist = Math.hypot(nearestEnemy.x - this.x, nearestEnemy.y - this.y);
+        if (dist < 120 && Math.random() < 0.2) {
+          this.swordSlashTimer = 0.2;
+          try { if (soundEngine) soundEngine.playSlash(); } catch(e) {}
+          if (particleSystem) {
+            particleSystem.spawnScratch(nearestEnemy.x, nearestEnemy.y, '#10b981');
+          }
+          // Extra Time Stop enhanced damage
+          nearestEnemy.takeDamage(42, this, particleSystem, 'crit');
+        }
+      }
+    }
+
+    // ── 5. Cooldown Charging & Auto-Cast ──
     this.skill1Timer += effDt;
     this.ultTimer += effDt;
 
     if (this.skill1Timer >= this.skill1MaxCd && nearestEnemy) {
-      this.triggerSkill1(nearestEnemy, skillManager, soundEngine, particleSystem);
+      this.triggerSkill1(nearestEnemy, skillManager, soundEngine, particleSystem, arena);
       this.skill1Timer = 0;
     }
 
@@ -184,12 +216,16 @@ class Fighter {
       this.ultTimer = 0;
     }
 
-    // ── Movement ──
-    this.x += this.vx * speedMultiplier;
-    this.y += this.vy * speedMultiplier;
+    // ── 6. Movement ──
+    let speedMult = speedMultiplier;
+    if (skillManager && skillManager.isTimeStopped && skillManager.timeStopOwner === this) {
+      speedMult *= 1.5; // +50% speed during time stop
+    }
+    this.x += this.vx * speedMult;
+    this.y += this.vy * speedMult;
   }
 
-  triggerSkill1(enemy, skillManager, soundEngine, particleSystem) {
+  triggerSkill1(enemy, skillManager, soundEngine, particleSystem, arena) {
     if (!skillManager || !enemy) return;
 
     if (particleSystem) {
@@ -198,7 +234,7 @@ class Fighter {
     }
 
     if (this.id === 'nana') {
-      // Heavy single shot with big muzzle flash
+      // Heavy Sniper Shot
       this.muzzleFlashTimer = 0.22;
       const tipX = this.x + Math.cos(this.aimAngle) * 52;
       const tipY = this.y + Math.sin(this.aimAngle) * 52;
@@ -206,9 +242,17 @@ class Fighter {
       if (particleSystem) particleSystem.shake(5);
 
     } else if (this.id === 'shibuki') {
-      // Quick double horn poke
+      // Rapid Double Horn Poke
       skillManager.spawnShibukiHorn(this, enemy, this.hornImg, particleSystem, 1);
       this.pendingHorns.push({ delay: 0.18 });
+
+    } else if (this.id === 'riko') {
+      // Jarvan E style Holy Sword Drop
+      this.swordSlashTimer = 0.35;
+      // Target area: midpoint between arena center and enemy
+      const targetX = arena ? (arena.cx + enemy.x) * 0.5 : enemy.x;
+      const targetY = arena ? (arena.cy + enemy.y) * 0.5 : enemy.y;
+      skillManager.spawnRikoSwordDrop(this, targetX, targetY, this.swordImg, particleSystem, soundEngine);
     }
   }
 
@@ -239,7 +283,7 @@ class Fighter {
       this.isFoxTransformed = true;
       this.foxTransformTimer = this.foxMaxDuration;
       this.invulnerableTimer = 0.6;
-      this.foxDashCooldown = 0.3; // Instant first dash
+      this.foxDashCooldown = 0.2; // Instant first dash
 
       if (enemy) {
         const angle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
@@ -251,10 +295,21 @@ class Fighter {
         particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 150, 8);
         particleSystem.spawnDamageText(this.x, this.y, '🦊 캥캥이 돌격!', 'buff', '#a855f7');
       }
+
+    } else if (this.id === 'riko') {
+      // 2.8s Time Stop (Chrono Lock)
+      skillManager.triggerTimeStop(this, 2.8, soundEngine, particleSystem);
+      this.invulnerableTimer = 1.0;
+
+      if (enemy) {
+        const angle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
+        this.vx = Math.cos(angle) * this.baseSpeed * 2.2;
+        this.vy = Math.sin(angle) * this.baseSpeed * 2.2;
+      }
     }
   }
 
-  // Fox scratch: 35 damage, 0.3s internal CD
+  // Fox scratch
   applyFoxScratch(enemy, particleSystem) {
     if (!this.isFoxTransformed || this.scratchCooldown > 0 || !enemy || enemy.isDead) return;
     this.scratchCooldown = 0.3;
@@ -270,7 +325,14 @@ class Fighter {
 
   takeDamage(amount, attacker, particleSystem, type = 'normal') {
     if (this.isDead || this.invulnerableTimer > 0) return 0;
-    const finalDmg = Math.max(3, Math.floor(amount - this.def * 0.15));
+
+    let finalDmg = Math.max(3, Math.floor(amount - this.def * 0.15));
+
+    // If attacker is Riko during Time Stop, +80% bonus damage
+    if (attacker && attacker.id === 'riko' && window.gameApp && window.gameApp.skills && window.gameApp.skills.isTimeStopped) {
+      finalDmg = Math.floor(finalDmg * 1.8);
+    }
+
     this.hp -= finalDmg;
 
     if (particleSystem) {
@@ -332,7 +394,7 @@ class Fighter {
         ctx.fillText(this.emoji, 0, 2);
       }
 
-      // ── Nana Gun ──
+      // ── Nana Gun '사랑이' ──
       if (this.id === 'nana' && this.gunImg && this.gunImg.complete && this.gunImg.naturalWidth > 0) {
         ctx.save();
         const gd = this.radius * 0.85;
@@ -349,6 +411,16 @@ class Fighter {
         }
         ctx.restore();
       }
+
+      // ── Riko Sword '성검' ──
+      if (this.id === 'riko' && this.swordImg && this.swordImg.complete && this.swordImg.naturalWidth > 0) {
+        ctx.save();
+        const sd = this.radius * 0.9;
+        ctx.translate(Math.cos(this.aimAngle) * sd, Math.sin(this.aimAngle) * sd);
+        ctx.rotate(this.aimAngle + Math.PI / 4 + (this.swordSlashTimer > 0 ? Math.sin(Date.now() * 0.05) * 0.8 : 0));
+        ctx.drawImage(this.swordImg, -12, -45, 24, 80);
+        ctx.restore();
+      }
     }
 
     // ── Ultimate Charge Ring ──
@@ -360,14 +432,13 @@ class Fighter {
       ctx.arc(0, 0, this.radius + 7, -Math.PI / 2, -Math.PI / 2 + ultRatio * Math.PI * 2);
       ctx.stroke();
     } else {
-      // Full charge glow pulse
       const pulse = 0.6 + 0.4 * Math.sin(Date.now() * 0.008);
       ctx.lineWidth = 5;
       ctx.strokeStyle = `rgba(255, 215, 0, ${pulse})`;
       ctx.beginPath(); ctx.arc(0, 0, this.radius + 7, 0, Math.PI * 2); ctx.stroke();
     }
 
-    // ── HP Bar ──
+    // ── Overhead HP Bar ──
     const barW = 72, barH = 9, barY = -this.radius - 20;
     ctx.fillStyle = 'rgba(0,0,0,0.85)';
     ctx.fillRect(-barW / 2 - 1, barY - 1, barW + 2, barH + 2);

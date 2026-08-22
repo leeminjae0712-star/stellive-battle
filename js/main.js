@@ -1,6 +1,6 @@
 ﻿/**
- * Main Game Controller
- * Bulletproof, error-resilient 60 FPS continuous loop.
+ * Main Game Controller - StelLive 3-Hero Battle Edition
+ * Supports Nana, Shibuki, and Riko across 1v1 and 3-Way FFA.
  */
 
 class GameApp {
@@ -19,12 +19,14 @@ class GameApp {
 
     // Game State
     this.allCharacterData = STELLIVE_CHARACTERS;
+    this.currentMode = 'all-3-way'; // 'nana-vs-shibuki' | 'nana-vs-riko' | 'shibuki-vs-riko' | 'all-3-way'
     this.fighters = [];
     this.isPlaying = false;
     this.isPaused = false;
     this.speedMultiplier = 1.0;
     this.lastTime = 0;
 
+    window.gameApp = this;
     this.init();
   }
 
@@ -34,7 +36,6 @@ class GameApp {
 
     this.setupEventListeners();
     this.resetFighters();
-    this.updateVsHud();
 
     // Start 60 FPS Game Loop
     requestAnimationFrame((t) => this.loop(t));
@@ -62,6 +63,19 @@ class GameApp {
   }
 
   setupEventListeners() {
+    // Mode Buttons
+    const modeButtons = document.querySelectorAll('.mode-btn');
+    modeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        modeButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.currentMode = btn.getAttribute('data-mode') || 'all-3-way';
+        this.resetFighters();
+        this.audio.playClick();
+      });
+    });
+
+    // Start / Pause Button
     const btnStart = document.getElementById('btn-start');
     const btnStartText = document.getElementById('btn-start-text');
     btnStart.addEventListener('click', () => {
@@ -80,6 +94,7 @@ class GameApp {
       }
     });
 
+    // Reset Button
     const btnReset = document.getElementById('btn-reset');
     btnReset.addEventListener('click', () => {
       this.audio.init();
@@ -139,6 +154,75 @@ class GameApp {
     });
   }
 
+  buildVsHudHtml() {
+    const hudContainer = document.getElementById('vs-hud');
+    if (!hudContainer) return;
+
+    const is1v1 = this.fighters.length === 2;
+    hudContainer.className = is1v1 ? 'vs-hud-container mode-1v1' : 'vs-hud-container mode-ffa';
+
+    let html = '';
+
+    this.fighters.forEach((f, idx) => {
+      const cardClass = `${f.id}-card`;
+      const hpFillClass = f.id === 'shibuki' ? 'shibuki-hp' : f.id === 'riko' ? 'riko-hp' : '';
+      const s1FillClass = f.id === 'shibuki' ? 'shibuki-s1' : f.id === 'riko' ? 'riko-s1' : '';
+
+      html += `
+        <div class="vs-fighter-card ${cardClass}" id="vs-card-${f.id}">
+          <div class="vs-profile-row">
+            <div class="vs-avatar-box">
+              <img src="${f.avatarImg ? f.avatarImg.src : ''}" alt="${f.name}">
+            </div>
+            <div class="vs-name-box">
+              <span class="vs-fighter-name">${f.name}</span>
+              <span class="vs-hp-text" id="hud-hp-${f.id}">${f.hp} / ${f.maxHp} HP</span>
+            </div>
+          </div>
+
+          <div class="vs-bar-wrap">
+            <div class="vs-bar-bg">
+              <div class="vs-bar-fill hp-fill ${hpFillClass}" id="hud-hp-bar-${f.id}" style="width: 100%;"></div>
+            </div>
+            <div class="vs-hearts-row" id="hud-hearts-${f.id}">❤️❤️❤️❤️❤️</div>
+          </div>
+
+          <div class="vs-cooldowns-grid">
+            <div class="cd-row">
+              <div class="cd-label-row">
+                <span class="cd-name">${f.emoji} ${f.skill1Name}</span>
+                <span class="cd-status" id="hud-s1-status-${f.id}">READY!</span>
+              </div>
+              <div class="cd-bar-bg">
+                <div class="cd-bar-fill s1-fill ${s1FillClass}" id="hud-s1-bar-${f.id}" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <div class="cd-row">
+              <div class="cd-label-row">
+                <span class="cd-name">⚡ ${f.ultName}</span>
+                <span class="cd-status" id="hud-ult-status-${f.id}">0%</span>
+              </div>
+              <div class="cd-bar-bg">
+                <div class="cd-bar-fill ult-fill" id="hud-ult-bar-${f.id}" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      if (is1v1 && idx === 0) {
+        html += `
+          <div class="vs-divider">
+            <div class="vs-badge">VS</div>
+          </div>
+        `;
+      }
+    });
+
+    hudContainer.innerHTML = html;
+  }
+
   resetFighters() {
     this.fighters = [];
     this.particles.reset();
@@ -148,29 +232,48 @@ class GameApp {
 
     const nanaData = this.allCharacterData.find(c => c.id === 'nana') || this.allCharacterData[0];
     const shibukiData = this.allCharacterData.find(c => c.id === 'shibuki') || this.allCharacterData[1];
+    const rikoData = this.allCharacterData.find(c => c.id === 'riko') || this.allCharacterData[2];
 
-    const spawnOffsetX = this.arena.halfSize * 0.5;
-    const nana = new Fighter(nanaData, this.arena.cx - spawnOffsetX, this.arena.cy);
-    const shibuki = new Fighter(shibukiData, this.arena.cx + spawnOffsetX, this.arena.cy);
+    const spawnDist = this.arena.halfSize * 0.52;
 
-    this.fighters.push(nana, shibuki);
+    if (this.currentMode === 'nana-vs-shibuki') {
+      const nana = new Fighter(nanaData, this.arena.cx - spawnDist, this.arena.cy);
+      const shibuki = new Fighter(shibukiData, this.arena.cx + spawnDist, this.arena.cy);
+      this.fighters.push(nana, shibuki);
+
+    } else if (this.currentMode === 'nana-vs-riko') {
+      const nana = new Fighter(nanaData, this.arena.cx - spawnDist, this.arena.cy);
+      const riko = new Fighter(rikoData, this.arena.cx + spawnDist, this.arena.cy);
+      this.fighters.push(nana, riko);
+
+    } else if (this.currentMode === 'shibuki-vs-riko') {
+      const shibuki = new Fighter(shibukiData, this.arena.cx - spawnDist, this.arena.cy);
+      const riko = new Fighter(rikoData, this.arena.cx + spawnDist, this.arena.cy);
+      this.fighters.push(shibuki, riko);
+
+    } else {
+      // 3-Way FFA (Triangle Spawn)
+      const nana = new Fighter(nanaData, this.arena.cx - spawnDist * 0.9, this.arena.cy - spawnDist * 0.6);
+      const shibuki = new Fighter(shibukiData, this.arena.cx + spawnDist * 0.9, this.arena.cy - spawnDist * 0.6);
+      const riko = new Fighter(rikoData, this.arena.cx, this.arena.cy + spawnDist * 0.85);
+      this.fighters.push(nana, shibuki, riko);
+    }
+
+    this.buildVsHudHtml();
     this.updateVsHud();
   }
 
   updateVsHud() {
-    const nana = this.fighters.find(f => f.id === 'nana');
-    const shibuki = this.fighters.find(f => f.id === 'shibuki');
+    for (const f of this.fighters) {
+      const hpPercent = Math.max(0, (f.hp / f.maxHp) * 100);
+      const hpEl = document.getElementById(`hud-hp-${f.id}`);
+      const hpBar = document.getElementById(`hud-hp-bar-${f.id}`);
+      const heartsEl = document.getElementById(`hud-hearts-${f.id}`);
+      const cardEl = document.getElementById(`vs-card-${f.id}`);
 
-    if (nana) {
-      const hpPercent = Math.max(0, (nana.hp / nana.maxHp) * 100);
-      const hpEl = document.getElementById('hud-hp-nana');
-      const hpBar = document.getElementById('hud-hp-bar-nana');
-      const heartsEl = document.getElementById('hud-hearts-nana');
-      const cardEl = document.getElementById('vs-card-nana');
-
-      if (hpEl) hpEl.textContent = nana.isDead ? '💀 K.O.' : `${nana.hp} / ${nana.maxHp} HP`;
+      if (hpEl) hpEl.textContent = f.isDead ? '💀 K.O.' : `${f.hp} / ${f.maxHp} HP`;
       if (hpBar) hpBar.style.width = `${hpPercent}%`;
-      if (cardEl) cardEl.classList.toggle('dead', nana.isDead);
+      if (cardEl) cardEl.classList.toggle('dead', f.isDead);
 
       if (heartsEl) {
         const fullCount = Math.ceil(hpPercent / 20);
@@ -181,78 +284,28 @@ class GameApp {
         heartsEl.innerHTML = hStr;
       }
 
-      const s1Percent = Math.min(100, Math.floor((nana.skill1Timer / nana.skill1MaxCd) * 100));
-      const s1Bar = document.getElementById('hud-s1-bar-nana');
-      const s1Status = document.getElementById('hud-s1-status-nana');
+      const s1Percent = Math.min(100, Math.floor((f.skill1Timer / f.skill1MaxCd) * 100));
+      const s1Bar = document.getElementById(`hud-s1-bar-${f.id}`);
+      const s1Status = document.getElementById(`hud-s1-status-${f.id}`);
       if (s1Bar) s1Bar.style.width = `${s1Percent}%`;
       if (s1Status) {
         if (s1Percent >= 100) {
-          s1Status.textContent = '🔥 READY!';
+          s1Status.textContent = '✨ READY!';
           s1Status.className = 'cd-status ready';
         } else {
-          const rem = Math.max(0, nana.skill1MaxCd - nana.skill1Timer);
+          const rem = Math.max(0, f.skill1MaxCd - f.skill1Timer);
           s1Status.textContent = `${rem.toFixed(1)}s`;
           s1Status.className = 'cd-status';
         }
       }
 
-      const ultPercent = Math.min(100, Math.floor((nana.ultTimer / nana.ultMaxCd) * 100));
-      const ultBar = document.getElementById('hud-ult-bar-nana');
-      const ultStatus = document.getElementById('hud-ult-status-nana');
+      const ultPercent = Math.min(100, Math.floor((f.ultTimer / f.ultMaxCd) * 100));
+      const ultBar = document.getElementById(`hud-ult-bar-${f.id}`);
+      const ultStatus = document.getElementById(`hud-ult-status-${f.id}`);
       if (ultBar) ultBar.style.width = `${ultPercent}%`;
       if (ultStatus) {
         if (ultPercent >= 100) {
-          ultStatus.textContent = '🌟 READY!';
-          ultStatus.className = 'cd-status ready-gold';
-        } else {
-          ultStatus.textContent = `${ultPercent}%`;
-          ultStatus.className = 'cd-status';
-        }
-      }
-    }
-
-    if (shibuki) {
-      const hpPercent = Math.max(0, (shibuki.hp / shibuki.maxHp) * 100);
-      const hpEl = document.getElementById('hud-hp-shibuki');
-      const hpBar = document.getElementById('hud-hp-bar-shibuki');
-      const heartsEl = document.getElementById('hud-hearts-shibuki');
-      const cardEl = document.getElementById('vs-card-shibuki');
-
-      if (hpEl) hpEl.textContent = shibuki.isDead ? '💀 K.O.' : `${shibuki.hp} / ${shibuki.maxHp} HP`;
-      if (hpBar) hpBar.style.width = `${hpPercent}%`;
-      if (cardEl) cardEl.classList.toggle('dead', shibuki.isDead);
-
-      if (heartsEl) {
-        const fullCount = Math.ceil(hpPercent / 20);
-        let hStr = '';
-        for (let i = 0; i < 5; i++) {
-          hStr += i < fullCount ? '❤️' : '🖤';
-        }
-        heartsEl.innerHTML = hStr;
-      }
-
-      const s1Percent = Math.min(100, Math.floor((shibuki.skill1Timer / shibuki.skill1MaxCd) * 100));
-      const s1Bar = document.getElementById('hud-s1-bar-shibuki');
-      const s1Status = document.getElementById('hud-s1-status-shibuki');
-      if (s1Bar) s1Bar.style.width = `${s1Percent}%`;
-      if (s1Status) {
-        if (s1Percent >= 100) {
-          s1Status.textContent = '🔥 READY!';
-          s1Status.className = 'cd-status ready';
-        } else {
-          const rem = Math.max(0, shibuki.skill1MaxCd - shibuki.skill1Timer);
-          s1Status.textContent = `${rem.toFixed(1)}s`;
-          s1Status.className = 'cd-status';
-        }
-      }
-
-      const ultPercent = Math.min(100, Math.floor((shibuki.ultTimer / shibuki.ultMaxCd) * 100));
-      const ultBar = document.getElementById('hud-ult-bar-shibuki');
-      const ultStatus = document.getElementById('hud-ult-status-shibuki');
-      if (ultBar) ultBar.style.width = `${ultPercent}%`;
-      if (ultStatus) {
-        if (ultPercent >= 100) {
-          ultStatus.textContent = '🌟 READY!';
+          ultStatus.textContent = '⚡ READY!';
           ultStatus.className = 'cd-status ready-gold';
         } else {
           ultStatus.textContent = `${ultPercent}%`;
@@ -329,61 +382,60 @@ class GameApp {
           f.update(dt, this.arena, this.fighters, this.skills, this.audio, this.particles, effSpeed);
         }
 
-        // 2. Physics (Continuous unsticking bounce)
-        this.physics.update(dt, this.fighters, this.arena, this.audio, this.particles, effSpeed);
+        // 2. Physics with Time Stop support
+        this.physics.update(dt, this.fighters, this.arena, this.audio, this.particles, effSpeed, this.skills);
 
-        // 3. Update Skills & Bullets
+        // 3. Update Skills & Bullets & Swords
         this.skills.update(dt, this.arena, this.fighters, this.particles, this.audio, effSpeed);
 
         // 4. Check Win Condition
         this.checkGameEnd();
       }
 
-      // Update 50:50 VS HUD
+      // Render
+      this.render();
       this.updateVsHud();
 
-      // Update Particles
-      this.particles.update(dt, this.speedMultiplier);
-
-      // Render Canvas
-      this.render();
     } catch (e) {
-      console.error('Simulation loop exception handled:', e);
+      console.error('Safe Game Loop caught exception:', e);
+    } finally {
+      requestAnimationFrame((t) => this.loop(t));
     }
-
-    // Always continue loop
-    requestAnimationFrame((t) => this.loop(t));
   }
 
   render() {
-    const dpr = this.dpr || 1;
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.scale(this.dpr || 1, this.dpr || 1);
 
-    // Screen Shake
-    if (this.particles.screenShake > 0) {
-      const sx = (Math.random() - 0.5) * this.particles.screenShake;
-      const sy = (Math.random() - 0.5) * this.particles.screenShake;
-      this.ctx.translate(sx, sy);
+    // Clear
+    ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+
+    // 1. Arena Background & Pure White Border
+    if (this.arena) {
+      this.arena.render(ctx);
     }
 
-    // 1. Arena
-    this.arena.render(this.ctx);
-
-    // 2. Skills & Projectiles
-    this.skills.render(this.ctx);
+    // 2. Skills & Projectiles & Planted Holy Swords
+    if (this.skills) {
+      this.skills.render(ctx);
+    }
 
     // 3. Fighters
     for (const f of this.fighters) {
-      f.render(this.ctx);
+      f.render(ctx);
     }
 
-    // 4. Particles & Damage Numbers
-    this.particles.render(this.ctx);
+    // 4. Particles & Floating Damage Numbers
+    if (this.particles) {
+      this.particles.render(ctx);
+    }
+
+    ctx.restore();
   }
 }
 
-// Start Game
+// Bootstrap
 window.addEventListener('DOMContentLoaded', () => {
   window.gameApp = new GameApp();
 });
