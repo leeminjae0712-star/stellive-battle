@@ -1,34 +1,33 @@
 ﻿/**
- * StelLive Characters & Presets Data (11 Members)
+ * StelLive Characters Data (Hanako Nana & Tenko Shibuki)
  * Domain: hanakonana.cloud
  */
 
 const STELLIVE_CHARACTERS = [
-  // 3기: Cliché (클리셰)
   {
     id: 'nana',
     name: '하나코 나나',
     romanName: 'Hanako Nana',
     group: 'gen3',
     groupName: '3기 Cliché',
-    role: '리더 / 딜러',
+    role: '원거리 딜러 / 건슬링거',
     title: '환각 포자와 사랑이의 총잡이',
     color: '#ff69b4',
     glowColor: '#ec4899',
     emoji: '🌸',
     hp: 1000,
-    atk: 52,
-    def: 18,
-    speed: 3.8,
-    skill1Name: '사랑이 단발 사격',
-    skill1Desc: '애총 [사랑이]를 조준 발사하여 적에게 큰 데미지를 입힙니다.',
-    skill1Cooldown: 6.5,
-    ultName: '사랑이 난사 폭격!',
-    ultDesc: '화면 가득 [사랑이] 총기 탄막을 난사하여 무작위 적들을 폭격합니다.',
-    ultCooldown: 16.0,
+    atk: 54,
+    def: 16,
+    speed: 2.2, // Relaxed reels-style bounce speed
+    skill1Name: '사랑이 정밀 사격',
+    skill1Desc: '애총 [사랑이]로 적을 조준하여 강력한 핑크 탄환 1발을 발사합니다.',
+    skill1Cooldown: 4.0,
+    ultName: '사랑이 뚜루루룰루 난사!',
+    ultDesc: '기관총처럼 18연발 탄환을 [뚜루루룰루~] 쏟아붓습니다!',
+    ultCooldown: 14.0,
     avatarUrl: 'assets/nana_avatar.png',
     fullArtUrl: 'assets/nana_full.png',
-    projectileImg: 'assets/sarangi_gun.png',
+    gunImg: 'assets/sarangi_gun_aim.png',
     skillType: 'nana_sarangi'
   },
   {
@@ -37,270 +36,25 @@ const STELLIVE_CHARACTERS = [
     romanName: 'Tenko Shibuki',
     group: 'gen3',
     groupName: '3기 Cliché',
-    role: '돌격 / 변신수',
+    role: '돌격 짤짤이 / 변신수',
     title: '신비로운 뿔과 캥캥이 여우 요괴',
-    color: '#a78bfa',
+    color: '#a855f7',
     glowColor: '#8b5cf6',
     emoji: '🦊',
-    hp: 1100,
-    atk: 55,
-    def: 16,
-    speed: 4.0,
-    skill1Name: '도깨비 뿔 투척',
-    skill1Desc: '머리의 뿔 2개를 [똑, 똑] 시차를 두고 순차 발사합니다.',
-    skill1Cooldown: 6.0,
+    hp: 1050,
+    atk: 50,
+    def: 18,
+    speed: 2.3, // Relaxed reels-style bounce speed
+    skill1Name: '도깨비 뿔 짤짤이',
+    skill1Desc: '머리의 뿔 2개를 [똑, 똑] 시차를 두고 매우 자주 발사합니다.',
+    skill1Cooldown: 2.2, // Fast poke cooldown
     ultName: '캥캥이 대변신!',
-    ultDesc: '6초간 캥캥이(여우) 폼으로 변신! 거대화 + 초고속 질주 + 충돌 시 날카로운 할큄 연타!',
-    ultCooldown: 18.0,
+    ultDesc: '5.5초간 캥캥이(여우) 폼으로 변신! 거대화 + 초고속 돌격 + 접촉 시 날카로운 할큄 연타!',
+    ultCooldown: 15.0,
     avatarUrl: 'assets/shibuki_avatar.png',
     fullArtUrl: 'assets/shibuki_full.png',
     foxImg: 'assets/shibuki_fox.png',
     hornImg: 'assets/shibuki_horn.png',
     skillType: 'shibuki_fox'
-  },
-  {
-    id: 'riko',
-    name: '유즈하 리코',
-    romanName: 'Yuzuha Riko',
-    group: 'gen3',
-    groupName: '3기 Cliché',
-    role: '물리 / 펀처',
-    title: '질풍의 토네이도 펀처',
-    color: '#fbbf24',
-    glowColor: '#f59e0b',
-    emoji: '🥊',
-    hp: 1150,
-    atk: 50,
-    def: 22,
-    speed: 3.9,
-    skill1Name: '돌풍 스트레이트',
-    skill1Desc: '가장 가까운 적에게 광속으로 돌진하여 넉백을 가합니다.',
-    skill1Cooldown: 6.5,
-    ultName: '기간틱 메가 펀치!',
-    ultDesc: '아레나 중심에 거대한 회오리를 일으켜 적들을 빨아들이고 폭발시킵니다.',
-    ultCooldown: 17.0,
-    avatarUrl: null,
-    skillType: 'punch'
-  },
-  {
-    id: 'rin',
-    name: '아오쿠모 린',
-    romanName: 'Aokumo Rin',
-    group: 'gen3',
-    groupName: '3기 Cliché',
-    role: '빙결 / 검사',
-    title: '푸른 구름의 서리 검객',
-    color: '#2dd4bf',
-    glowColor: '#0d9488',
-    emoji: '❄️',
-    hp: 1050,
-    atk: 56,
-    def: 18,
-    speed: 4.1,
-    skill1Name: '청운 서리베기',
-    skill1Desc: '적의 이동속도를 둔화시키는 얼음 칼날을 날립니다.',
-    skill1Cooldown: 7.0,
-    ultName: '심연의 빙하 폭풍!',
-    ultDesc: '아레나 전역을 얼어붙게 만들어 모든 적을 일시 정지시킵니다.',
-    ultCooldown: 18.0,
-    avatarUrl: null,
-    skillType: 'ice'
-  },
-
-  // 2기: Universe (유니버스)
-  {
-    id: 'hina',
-    name: '시라유키 히나',
-    romanName: 'Shirayuki Hina',
-    group: 'gen2',
-    groupName: '2기 Universe',
-    role: '원거리 스나이퍼',
-    title: '청아한 목소리와 정밀 스나이핑',
-    color: '#67e8f9',
-    glowColor: '#06b6d4',
-    emoji: '🎯',
-    hp: 950,
-    atk: 60,
-    def: 14,
-    speed: 3.7,
-    skill1Name: '정밀 레이저 샷',
-    skill1Desc: '관통하는 초고속 레이저 광선을 일직선으로 발사합니다.',
-    skill1Cooldown: 6.0,
-    ultName: '스타라이트 궤도 폭격!',
-    ultDesc: '4방향에서 교차하는 대구경 궤도 레이저를 쏟아붓습니다.',
-    ultCooldown: 16.5,
-    avatarUrl: null,
-    skillType: 'laser'
-  },
-  {
-    id: 'mashiro',
-    name: '네네코 마시로',
-    romanName: 'Neneko Mashiro',
-    group: 'gen2',
-    groupName: '2기 Universe',
-    role: '탱커 / 해머',
-    title: '달콤한 디저트와 황금 해머',
-    color: '#f472b6',
-    glowColor: '#ec4899',
-    emoji: '🔨',
-    hp: 1250,
-    atk: 46,
-    def: 26,
-    speed: 3.5,
-    skill1Name: '마시멜로 스매시',
-    skill1Desc: '지면을 내리쳐 주변의 적들을 튕겨냅니다.',
-    skill1Cooldown: 7.0,
-    ultName: '기간틱 디저트 임팩트!',
-    ultDesc: '거대한 황금 해머를 낙하시켜 광역 기절과 엄청난 타격을 입힙니다.',
-    ultCooldown: 18.0,
-    avatarUrl: null,
-    skillType: 'smash'
-  },
-  {
-    id: 'lize',
-    name: '아카네 리제',
-    romanName: 'Akane Lize',
-    group: 'gen2',
-    groupName: '2기 Universe',
-    role: '흡혈 / 버서커',
-    title: '진홍빛 흡혈귀 검사',
-    color: '#ef4444',
-    glowColor: '#b91c1c',
-    emoji: '🩸',
-    hp: 1200,
-    atk: 54,
-    def: 22,
-    speed: 3.8,
-    skill1Name: '블러드 드레인',
-    skill1Desc: '적에게 데미지를 주고 가한 피해의 일부를 체력으로 흡수합니다.',
-    skill1Cooldown: 6.5,
-    ultName: '크림슨 블러드 카니발!',
-    ultDesc: '모든 적의 피를 흡수하며 대량의 체력을 즉시 회복합니다.',
-    ultCooldown: 17.5,
-    avatarUrl: null,
-    skillType: 'vampire'
-  },
-  {
-    id: 'tabi',
-    name: '아라하시 타비',
-    romanName: 'Arahashi Tabi',
-    group: 'gen2',
-    groupName: '2기 Universe',
-    role: '중력 / 성운',
-    title: '우주의 별빛과 성운 조종자',
-    color: '#38bdf8',
-    glowColor: '#0284c7',
-    emoji: '🌌',
-    hp: 1020,
-    atk: 53,
-    def: 18,
-    speed: 4.0,
-    skill1Name: '중력 펄스',
-    skill1Desc: '적들을 강하게 밀어내며 궤도를 왜곡시킵니다.',
-    skill1Cooldown: 6.0,
-    ultName: '성운 블랙홀!',
-    ultDesc: '아레나 중심에 블랙홀을 생성하여 적들을 모으고 강력한 폭발을 일으킵니다.',
-    ultCooldown: 17.0,
-    avatarUrl: null,
-    skillType: 'gravity'
-  },
-
-  // 1기: Mystic (미스틱)
-  {
-    id: 'kanna',
-    name: '아이리 칸나',
-    romanName: 'Airi Kanna',
-    group: 'gen1',
-    groupName: '1기 Mystic',
-    role: '화염 / 드래곤',
-    title: '푸른 용의 포효와 화염술사',
-    color: '#3b82f6',
-    glowColor: '#1d4ed8',
-    emoji: '🐉',
-    hp: 1180,
-    atk: 58,
-    def: 20,
-    speed: 3.9,
-    skill1Name: '블루 드래곤 플레임',
-    skill1Desc: '적을 추적하는 푸른 화염구를 발사합니다.',
-    skill1Cooldown: 6.0,
-    ultName: '청룡 용성군 (Dragon Nova)!',
-    ultDesc: '8방향으로 거대한 용의 화염을 폭사시켜 전장을 초토화합니다.',
-    ultCooldown: 17.0,
-    avatarUrl: null,
-    skillType: 'dragon_fire'
-  },
-  {
-    id: 'yuni',
-    name: '아야츠노 유니',
-    romanName: 'Ayatsuno Yuni',
-    group: 'gen1',
-    groupName: '1기 Mystic',
-    role: '서포트 / 칠링',
-    title: '귀여운 악동과 절대영도',
-    color: '#c084fc',
-    glowColor: '#9333ea',
-    emoji: '🦄',
-    hp: 980,
-    atk: 52,
-    def: 16,
-    speed: 4.2,
-    skill1Name: '유니 칠링 스노우',
-    skill1Desc: '주변 적들에게 눈송이를 던져 일시적으로 얼립니다.',
-    skill1Cooldown: 6.5,
-    ultName: '절대영도 블리자드 돔!',
-    ultDesc: '아레나 전체를 얼음 왕국으로 만들어 적들의 속도를 0으로 만듭니다.',
-    ultCooldown: 18.0,
-    avatarUrl: null,
-    skillType: 'ice'
-  },
-
-  // 스텔라이브 추가 멤버 (사키하네 후야)
-  {
-    id: 'fuya',
-    name: '사키하네 후야',
-    romanName: 'Sakihane Fuya',
-    group: 'gen3',
-    groupName: 'StelLive',
-    role: '신속 / 블레이드',
-    title: '깃털처럼 가벼운 섬광의 칼날',
-    color: '#e2e8f0',
-    glowColor: '#94a3b8',
-    emoji: '🪶',
-    hp: 1000,
-    atk: 56,
-    def: 17,
-    speed: 4.3,
-    skill1Name: '페더 플래시',
-    skill1Desc: '빛의 속도로 가장 약한 적의 배후를 급습합니다.',
-    skill1Cooldown: 6.0,
-    ultName: '환상 섬광 참격!',
-    ultDesc: '아레나 전체를 가로지르는 무수한 빛의 참격을 긋습니다.',
-    ultCooldown: 16.5,
-    avatarUrl: null,
-    skillType: 'laser'
   }
 ];
-
-// Helper to generate dynamic SVG avatar badge if image is not loaded
-function createCharacterAvatarSvg(character) {
-  const bg = encodeURIComponent(character.color);
-  const glow = encodeURIComponent(character.glowColor);
-  const emoji = character.emoji;
-  
-  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-    <defs>
-      <radialGradient id="grad" cx="40%" cy="40%" r="60%">
-        <stop offset="0%" stop-color="%23ffffff" stop-opacity="0.3"/>
-        <stop offset="100%" stop-color="${glow}" stop-opacity="0.8"/>
-      </radialGradient>
-      <linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="${bg}"/>
-        <stop offset="100%" stop-color="${glow}"/>
-      </linearGradient>
-    </defs>
-    <circle cx="50" cy="50" r="46" fill="%23131524" stroke="url(%23ring)" stroke-width="4"/>
-    <circle cx="50" cy="50" r="38" fill="url(%23grad)"/>
-    <text x="50" y="62" font-size="36" text-anchor="middle" dominant-baseline="central">${emoji}</text>
-  </svg>`;
-}

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>스텔라이브 배틀 (StelLive Battle) - hanakonana.cloud</title>
+  <title>스텔라이브 배틀: 나나 vs 시부키 (StelLive Battle) - hanakonana.cloud</title>
   <link rel="stylesheet" href="css/style.css">
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -45,22 +45,22 @@
 
     <!-- Main Workspace Grid -->
     <main class="main-layout">
-      <!-- Left Sidebar: 11 Fighters Roster Selection -->
+      <!-- Left Sidebar: Nana & Shibuki Roster -->
       <aside class="sidebar left-sidebar">
         <div class="panel-card">
           <div class="panel-header">
-            <h3><i data-lucide="users"></i> 파이터 선택 (11인)</h3>
-            <span class="badge" id="selected-count-badge">선택: 0명</span>
+            <h3><i data-lucide="users"></i> 파이터 선택</h3>
+            <span class="badge" id="selected-count-badge">선택: 2명</span>
           </div>
 
-          <!-- Quick Action Buttons -->
+          <!-- Quick Action -->
           <div class="roster-actions">
-            <button id="btn-select-all" class="btn btn-sm btn-outline">전원 선택 (11명)</button>
-            <button id="btn-nana-shibuki" class="btn btn-sm btn-outline highlight-btn">나나 vs 시부키</button>
-            <button id="btn-clear-all" class="btn btn-sm btn-outline">선택 해제</button>
+            <button id="btn-select-both" class="btn btn-sm btn-primary btn-block">
+              <i data-lucide="swords"></i> 나나 vs 시부키 1:1 대결
+            </button>
           </div>
 
-          <!-- 11 Characters Roster List -->
+          <!-- Characters Roster List -->
           <div class="character-grid" id="character-grid">
             <!-- Dynamically populated via characters.js -->
           </div>
@@ -80,8 +80,8 @@
               </div>
               <div class="cutin-text-group">
                 <span class="cutin-sub" id="cutin-fighter-name">하나코 나나</span>
-                <h2 class="cutin-title" id="cutin-skill-name">사랑이 난사 폭격!</h2>
-                <p class="cutin-desc" id="cutin-skill-desc">화면 가득 [사랑이] 총기 탄막을 난사합니다.</p>
+                <h2 class="cutin-title" id="cutin-skill-name">사랑이 뚜루루룰루 난사!</h2>
+                <p class="cutin-desc" id="cutin-skill-desc">기관총처럼 18연발 탄환을 [뚜루루룰루~] 쏟아붓습니다!</p>
               </div>
             </div>
           </div>
@@ -118,8 +118,8 @@
             <div class="btn-group">
               <button class="speed-btn" data-speed="0.5">0.5x</button>
               <button class="speed-btn active" data-speed="1">1x</button>
+              <button class="speed-btn" data-speed="1.5">1.5x</button>
               <button class="speed-btn" data-speed="2">2x</button>
-              <button class="speed-btn" data-speed="3">3x</button>
             </div>
           </div>
 
@@ -131,18 +131,6 @@
               <span class="slider"></span>
             </label>
           </div>
-
-          <!-- Mode Select -->
-          <div class="control-group">
-            <div class="select-wrapper">
-              <i data-lucide="shield"></i>
-              <select id="select-mode">
-                <option value="royale">배틀로얄 (개인전)</option>
-                <option value="duel">1 vs 1 데스매치</option>
-                <option value="team">팀 배틀 (3기 vs 2기/1기)</option>
-              </select>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -151,7 +139,7 @@
         <!-- Live Leaderboard -->
         <div class="panel-card">
           <div class="panel-header">
-            <h3><i data-lucide="bar-chart-2"></i> 실시간 랭킹</h3>
+            <h3><i data-lucide="bar-chart-2"></i> 실시간 상태</h3>
             <span class="live-pulse">LIVE</span>
           </div>
           <div class="leaderboard-list" id="leaderboard-list">
@@ -168,14 +156,14 @@
             <div class="guide-avatar-badge" style="background:#ff69b4;">🌸</div>
             <div class="guide-info">
               <strong>하나코 나나</strong>
-              <p>일반: [사랑이] 단발 사격 / 궁극기: [사랑이] 난사 폭격</p>
+              <p>일반: [사랑이] 단발 / 궁극기: [사랑이] 18연발 뚜루루룰루 난사</p>
             </div>
           </div>
           <div class="guide-item">
             <div class="guide-avatar-badge" style="background:#a855f7;">🦊</div>
             <div class="guide-info">
               <strong>텐코 시부키</strong>
-              <p>일반: [도깨비 뿔 똑, 똑] / 궁극기: [캥캥이 변신 & 할큄]</p>
+              <p>일반: [뿔 똑, 똑 짤짤이] / 궁극기: [캥캥이 변신 & 초고속 할큄]</p>
             </div>
           </div>
         </div>
@@ -185,7 +173,7 @@
           <div class="domain-badge">
             <i data-lucide="globe"></i> <strong>hanakonana.cloud</strong>
           </div>
-          <p class="domain-sub">스텔라이브 3기 하나코 나나 & 스텔라이브 바운스 배틀</p>
+          <p class="domain-sub">스텔라이브 3기 하나코 나나 & 텐코 시부키 바운스 배틀</p>
         </div>
       </aside>
     </main>
@@ -201,7 +189,6 @@
   <script src="js/entities/fighter.js"></script>
   <script src="js/main.js"></script>
   <script>
-    // Initialize Lucide icons
     document.addEventListener('DOMContentLoaded', () => {
       if (window.lucide) {
         lucide.createIcons();

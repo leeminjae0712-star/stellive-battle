@@ -1,6 +1,6 @@
 ﻿/**
  * Main Game Controller
- * Manages simulation loop, top Minecraft HUD, fighter selection, and UI events.
+ * Manages simulation loop, top Minecraft HUD, Nana & Shibuki 1v1 battle, and UI events.
  */
 
 class GameApp {
@@ -19,13 +19,12 @@ class GameApp {
 
     // Game State
     this.allCharacterData = STELLIVE_CHARACTERS;
-    this.selectedIds = new Set(['nana', 'shibuki', 'riko', 'rin']); // Default 4 members selected
+    this.selectedIds = new Set(['nana', 'shibuki']); // Default both selected
     this.fighters = [];
     this.isPlaying = false;
     this.isPaused = false;
     this.speedMultiplier = 1.0; // Default 1x speed
     this.skillPauseEnabled = true;
-    this.gameMode = 'royale';
     this.lastTime = 0;
     this.pauseRemainingTimer = 0;
 
@@ -50,7 +49,7 @@ class GameApp {
     btnStart.addEventListener('click', () => {
       if (!this.isPlaying) {
         if (this.fighters.length < 2) {
-          alert('배틀을 시작하려면 최소 2명 이상의 파이터를 선택해 주세요!');
+          alert('배틀을 시작하려면 최소 2명의 파이터를 선택해 주세요!');
           return;
         }
         this.isPlaying = true;
@@ -97,39 +96,18 @@ class GameApp {
       });
     }
 
-    // 4. Quick Roster Selection Action Buttons
-    const btnSelectAll = document.getElementById('btn-select-all');
-    btnSelectAll.addEventListener('click', () => {
-      this.selectedIds = new Set(this.allCharacterData.map(c => c.id));
-      this.renderCharacterRoster();
-      this.resetFighters();
-      this.audio.playClick();
-    });
+    // 4. Quick Roster Selection
+    const btnSelectBoth = document.getElementById('btn-select-both');
+    if (btnSelectBoth) {
+      btnSelectBoth.addEventListener('click', () => {
+        this.selectedIds = new Set(['nana', 'shibuki']);
+        this.renderCharacterRoster();
+        this.resetFighters();
+        this.audio.playClick();
+      });
+    }
 
-    const btnNanaShibuki = document.getElementById('btn-nana-shibuki');
-    btnNanaShibuki.addEventListener('click', () => {
-      this.selectedIds = new Set(['nana', 'shibuki']);
-      this.renderCharacterRoster();
-      this.resetFighters();
-      this.audio.playClick();
-    });
-
-    const btnClearAll = document.getElementById('btn-clear-all');
-    btnClearAll.addEventListener('click', () => {
-      this.selectedIds.clear();
-      this.renderCharacterRoster();
-      this.resetFighters();
-      this.audio.playClick();
-    });
-
-    // 5. Game Mode Selector
-    const selectMode = document.getElementById('select-mode');
-    selectMode.addEventListener('change', (e) => {
-      this.gameMode = e.target.value;
-      this.resetFighters();
-    });
-
-    // 6. Sound Toggle
+    // 5. Sound Toggle
     const btnSound = document.getElementById('btn-sound');
     btnSound.addEventListener('click', () => {
       const isMuted = this.audio.toggleMute();
@@ -137,7 +115,7 @@ class GameApp {
       if (window.lucide) lucide.createIcons();
     });
 
-    // 7. Fullscreen Toggle
+    // 6. Fullscreen Toggle
     const btnFullscreen = document.getElementById('btn-fullscreen');
     btnFullscreen.addEventListener('click', () => {
       if (!document.fullscreenElement) {
@@ -147,7 +125,7 @@ class GameApp {
       }
     });
 
-    // 8. Rematch Button
+    // 7. Rematch Button
     const btnRematch = document.getElementById('btn-rematch');
     btnRematch.addEventListener('click', () => {
       document.getElementById('winner-overlay').classList.add('hidden');
@@ -159,7 +137,7 @@ class GameApp {
       document.getElementById('btn-start').classList.add('btn-warning');
     });
 
-    // 9. Cutin Event Listener
+    // 8. Cutin Event Listener
     window.addEventListener('fighter-ult-cutin', (e) => {
       this.showUltCutin(e.detail.fighter, e.detail.ultName, e.detail.ultDesc, e.detail.shouldPause);
     });
@@ -167,6 +145,7 @@ class GameApp {
 
   renderCharacterRoster() {
     const grid = document.getElementById('character-grid');
+    if (!grid) return;
     grid.innerHTML = '';
 
     const countBadge = document.getElementById('selected-count-badge');
@@ -180,17 +159,9 @@ class GameApp {
       card.className = `roster-card ${isSelected ? 'selected' : ''}`;
       card.style.setProperty('--char-color', char.color);
 
-      // Card Avatar HTML
-      let avatarHtml = '';
-      if (char.avatarUrl) {
-        avatarHtml = `<img class="roster-avatar-img" src="${char.avatarUrl}" alt="${char.name}">`;
-      } else {
-        avatarHtml = `<div class="roster-avatar-emoji">${char.emoji}</div>`;
-      }
-
       card.innerHTML = `
         <div class="roster-avatar-box" style="border-color: ${char.color};">
-          ${avatarHtml}
+          <img class="roster-avatar-img" src="${char.avatarUrl}" alt="${char.name}">
         </div>
         <div class="roster-info">
           <div class="roster-title-row">
@@ -236,21 +207,14 @@ class GameApp {
       return;
     }
 
-    // Spawn fighters positioned in a neat circle within the 4-corner arena
+    // Spawn 1v1 at left & right sides of the 4-corner arena
     const count = selectedList.length;
-    const spawnRadius = Math.min(this.arena.halfW, this.arena.halfH) * 0.65;
-
     selectedList.forEach((char, index) => {
-      const angle = (index * Math.PI * 2) / count - Math.PI / 2;
-      const x = this.arena.cx + Math.cos(angle) * spawnRadius;
-      const y = this.arena.cy + Math.sin(angle) * spawnRadius;
+      const offsetX = count === 2 ? (index === 0 ? -this.arena.halfW * 0.55 : this.arena.halfW * 0.55) : 0;
+      const x = this.arena.cx + offsetX;
+      const y = this.arena.cy;
 
-      let team = null;
-      if (this.gameMode === 'team') {
-        team = char.group === 'gen3' ? 'Team 3기 (Cliché)' : 'Team 연합 (1·2기)';
-      }
-
-      const fighter = new Fighter(char, x, y, team);
+      const fighter = new Fighter(char, x, y);
       this.fighters.push(fighter);
     });
 
@@ -338,12 +302,12 @@ class GameApp {
     overlay.classList.remove('hidden');
 
     if (shouldPause) {
-      this.pauseRemainingTimer = 0.75; // Freeze action for 0.75s
+      this.pauseRemainingTimer = 0.65; // Freeze action for 0.65s
     }
 
     setTimeout(() => {
       overlay.classList.add('hidden');
-    }, 1100);
+    }, 1000);
   }
 
   updateLeaderboard() {
@@ -381,30 +345,20 @@ class GameApp {
 
     const alive = this.fighters.filter(f => !f.isDead);
 
-    if (this.gameMode === 'royale' || this.gameMode === 'duel') {
-      if (alive.length === 1 && this.fighters.length > 1) {
-        this.declareWinner(alive[0]);
-      } else if (alive.length === 0 && this.fighters.length > 0) {
-        this.isPlaying = false;
-      }
-    } else if (this.gameMode === 'team') {
-      const team3Alive = alive.filter(f => f.team === 'Team 3기 (Cliché)');
-      const teamOtherAlive = alive.filter(f => f.team === 'Team 연합 (1·2기)');
-      if (team3Alive.length === 0 && teamOtherAlive.length > 0) {
-        this.declareWinner(teamOtherAlive[0], 'Team 연합 (1·2기) 승리!');
-      } else if (teamOtherAlive.length === 0 && team3Alive.length > 0) {
-        this.declareWinner(team3Alive[0], 'Team 3기 (Cliché) 승리!');
-      }
+    if (alive.length === 1 && this.fighters.length > 1) {
+      this.declareWinner(alive[0]);
+    } else if (alive.length === 0 && this.fighters.length > 0) {
+      this.isPlaying = false;
     }
   }
 
-  declareWinner(winner, customTitle = null) {
+  declareWinner(winner) {
     this.isPlaying = false;
     this.audio.playVictory();
 
     const overlay = document.getElementById('winner-overlay');
     const nameEl = document.getElementById('winner-name');
-    nameEl.textContent = customTitle || `${winner.name} 최후의 승리!`;
+    nameEl.textContent = `${winner.name} 최후의 승리!`;
     overlay.classList.remove('hidden');
   }
 
@@ -419,15 +373,15 @@ class GameApp {
     } else if (this.isPlaying && !this.isPaused) {
       const effSpeed = this.speedMultiplier;
 
-      // 1. Update Fighters (Movement, Cooldowns, Skills)
+      // 1. Update Fighters (Movement, Gun Aim, Cooldowns, Skills)
       for (const f of this.fighters) {
         f.update(dt, this.arena, this.fighters, this.skills, this.audio, this.particles, effSpeed, this.skillPauseEnabled);
       }
 
-      // 2. Physics Resolution (Substeps, Wall bounce, Elastic clashes, Kaengkaengi scratches)
+      // 2. Physics (Substeps, Wall bounce, Elastic clashes, Kaengkaengi scratches)
       this.physics.update(dt, this.fighters, this.arena, this.audio, this.particles, effSpeed);
 
-      // 3. Update Skills & Lasers & Projectiles
+      // 3. Update Skills & Bullets
       this.skills.update(dt, this.arena, this.fighters, this.particles, this.audio, effSpeed);
 
       // 4. Update Minecraft HUD & Leaderboard
@@ -463,7 +417,7 @@ class GameApp {
     // 1. Draw Fixed 4-Corner Arena
     this.arena.render(this.ctx);
 
-    // 2. Draw Active Skill Lasers & Projectiles
+    // 2. Draw Active Skill Bullets & Horns
     this.skills.render(this.ctx);
 
     // 3. Draw Fighters
