@@ -1,7 +1,6 @@
 ﻿/**
  * Fighter Entity Class
- * Clean, bold character rendering with large 42px radius,
- * prominent gun & fox sprites, and no cluttered sub-text.
+ * High performance, zero shadow blur overhead, 60 FPS smooth rendering.
  */
 
 class Fighter {
@@ -17,10 +16,10 @@ class Fighter {
     this.glowColor = config.glowColor || this.color;
     this.emoji = config.emoji || '⭐';
 
-    // Position & Physics (Large, prominent character tokens)
+    // Position & Physics (Large 44px radius)
     this.x = x;
     this.y = y;
-    this.baseRadius = 42; // Large character avatar
+    this.baseRadius = 44;
     this.radius = this.baseRadius;
     this.mass = 1.0;
 
@@ -57,7 +56,7 @@ class Fighter {
     this.machineGunInterval = 0.085;
     this.machineGunBulletsLeft = 0;
 
-    // Shibuki Fox Transform & Dash
+    // Shibuki Fox Transform & Dash ("캥캥이")
     this.isFoxTransformed = false;
     this.foxTransformTimer = 0;
     this.foxMaxDuration = 5.0;
@@ -75,12 +74,6 @@ class Fighter {
     if (config.avatarUrl) {
       this.avatarImg = new Image();
       this.avatarImg.src = config.avatarUrl;
-    }
-
-    this.fullArtImg = null;
-    if (config.fullArtUrl) {
-      this.fullArtImg = new Image();
-      this.fullArtImg.src = config.fullArtUrl;
     }
 
     this.gunImg = null;
@@ -102,7 +95,7 @@ class Fighter {
     }
   }
 
-  update(dt, arena, allFighters, skillManager, soundEngine, particleSystem, speedMultiplier = 1, skillPauseEnabled = true) {
+  update(dt, arena, allFighters, skillManager, soundEngine, particleSystem, speedMultiplier = 1) {
     if (this.isDead) return;
 
     const effDt = dt * speedMultiplier;
@@ -118,13 +111,7 @@ class Fighter {
     if (this.muzzleFlashTimer > 0) this.muzzleFlashTimer -= effDt;
     if (this.invulnerableTimer > 0) this.invulnerableTimer -= effDt;
 
-    if (this.isFrozen) {
-      this.freezeTimer -= effDt;
-      if (this.freezeTimer <= 0) this.isFrozen = false;
-      else return;
-    }
-
-    // 1. Nana Machine Gun Execution ("사랑이 난사")
+    // 1. Nana Machine Gun ("사랑이 난사")
     if (this.isMachineGunning) {
       this.machineGunTimer -= effDt;
       this.machineGunNextShot -= effDt;
@@ -137,14 +124,14 @@ class Fighter {
         if (nearestEnemy && skillManager) {
           const spread = (Math.random() - 0.5) * 0.22;
           const shotAngle = this.aimAngle + spread;
-          const gunTipX = this.x + Math.cos(this.aimAngle) * 48;
-          const gunTipY = this.y + Math.sin(this.aimAngle) * 48;
+          const gunTipX = this.x + Math.cos(this.aimAngle) * 50;
+          const gunTipY = this.y + Math.sin(this.aimAngle) * 50;
 
           skillManager.spawnRapidBullet(this, gunTipX, gunTipY, shotAngle, particleSystem);
         }
 
         if (particleSystem) {
-          particleSystem.shake(1.8);
+          particleSystem.shake(1.5);
         }
       }
 
@@ -153,7 +140,7 @@ class Fighter {
       }
     }
 
-    // 2. Shibuki Fox Form & Aggressive Dash ("캥캥이")
+    // 2. Shibuki Fox Form ("캥캥이")
     if (this.isFoxTransformed) {
       this.foxTransformTimer -= effDt;
       this.scratchCooldown = Math.max(0, this.scratchCooldown - effDt);
@@ -169,11 +156,11 @@ class Fighter {
 
         if (particleSystem) {
           particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 60, 4);
-          particleSystem.spawnDamageText(this.x, this.y - 12, '대쉬!', 'buff', '#c084fc');
+          particleSystem.spawnDamageText(this.x, this.y - 14, '대쉬!', 'buff', '#c084fc');
         }
       }
 
-      if (particleSystem && Math.random() < 0.4) {
+      if (particleSystem && Math.random() < 0.3) {
         particleSystem.spawnSparks(this.x + (Math.random() - 0.5) * 20, this.y + (Math.random() - 0.5) * 20, '#c084fc', 2);
       }
 
@@ -189,7 +176,7 @@ class Fighter {
       this.radius = this.baseRadius;
     }
 
-    // 3. Shibuki Horn Queue ("뿔 발사" 똑, 똑)
+    // 3. Shibuki Horn Queue ("뿔 발사")
     if (this.pendingHorns.length > 0) {
       for (let i = this.pendingHorns.length - 1; i >= 0; i--) {
         const item = this.pendingHorns[i];
@@ -216,7 +203,7 @@ class Fighter {
 
     if (this.ultTimer >= this.ultMaxCd) {
       if (nearestEnemy) {
-        this.triggerUltimate(allFighters, skillManager, soundEngine, particleSystem, arena, skillPauseEnabled);
+        this.triggerUltimate(allFighters, skillManager, soundEngine, particleSystem, arena);
         this.ultTimer = 0;
       }
     }
@@ -238,7 +225,7 @@ class Fighter {
     this.x += this.vx * speedMultiplier;
     this.y += this.vy * speedMultiplier;
 
-    // 6. 1:1 Square Arena Wall Bounce
+    // 6. Arena Wall Bounce
     if (arena) {
       if (this.x - this.radius <= arena.left) {
         this.x = arena.left + this.radius;
@@ -272,8 +259,8 @@ class Fighter {
 
     if (this.id === 'nana') {
       this.muzzleFlashTimer = 0.18;
-      const gunTipX = this.x + Math.cos(this.aimAngle) * 48;
-      const gunTipY = this.y + Math.sin(this.aimAngle) * 48;
+      const gunTipX = this.x + Math.cos(this.aimAngle) * 50;
+      const gunTipY = this.y + Math.sin(this.aimAngle) * 50;
       skillManager.spawnHeavyBullet(this, gunTipX, gunTipY, this.aimAngle, particleSystem);
     } else if (this.id === 'shibuki') {
       skillManager.spawnShibukiHorn(this, enemy, this.hornImg, particleSystem, 1);
@@ -281,7 +268,7 @@ class Fighter {
     }
   }
 
-  triggerUltimate(allFighters, skillManager, soundEngine, particleSystem, arena, skillPauseEnabled = true) {
+  triggerUltimate(allFighters, skillManager, soundEngine, particleSystem, arena) {
     if (this.isDead || !skillManager) return;
 
     const enemy = this.findNearestEnemy(allFighters);
@@ -297,8 +284,7 @@ class Fighter {
       detail: {
         fighter: this,
         ultName: this.ultName,
-        ultDesc: this.ultDesc,
-        shouldPause: skillPauseEnabled
+        ultDesc: this.ultDesc
       }
     }));
 
@@ -392,9 +378,6 @@ class Fighter {
 
     // 1. Fox Form Render
     if (this.isFoxTransformed) {
-      ctx.shadowBlur = 25;
-      ctx.shadowColor = '#c084fc';
-
       if (this.foxImg && this.foxImg.complete && this.foxImg.naturalWidth > 0) {
         const foxW = this.radius * 2.8;
         const foxH = foxW * (this.foxImg.naturalHeight / this.foxImg.naturalWidth);
@@ -408,9 +391,6 @@ class Fighter {
 
     } else {
       // 2. Normal Character Avatar Render
-      ctx.shadowBlur = 14;
-      ctx.shadowColor = this.glowColor;
-
       // Base Body
       ctx.fillStyle = '#171926';
       ctx.beginPath();
@@ -418,15 +398,15 @@ class Fighter {
       ctx.fill();
 
       // Border Ring
-      ctx.lineWidth = 4.5;
+      ctx.lineWidth = 5;
       ctx.strokeStyle = this.color;
       ctx.stroke();
 
-      // Perfectly Centered Avatar
+      // Centered Avatar
       if (this.avatarImg && this.avatarImg.complete && this.avatarImg.naturalWidth > 0) {
         ctx.save();
         ctx.beginPath();
-        ctx.arc(0, 0, this.radius - 2, 0, Math.PI * 2);
+        ctx.arc(0, 0, this.radius - 2.5, 0, Math.PI * 2);
         ctx.clip();
         ctx.drawImage(this.avatarImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
         ctx.restore();
@@ -437,7 +417,7 @@ class Fighter {
         ctx.fillText(this.emoji, 0, 2);
       }
 
-      // 3. Nana's Gun '사랑이' Render (Large & Prominent)
+      // 3. Nana's Gun '사랑이' Render
       if (this.id === 'nana' && this.gunImg && this.gunImg.complete && this.gunImg.naturalWidth > 0) {
         ctx.save();
         const gunDist = this.radius * 0.85;
@@ -452,20 +432,20 @@ class Fighter {
           ctx.scale(1, -1);
         }
 
-        const gunW = 44;
-        const gunH = 36;
+        const gunW = 46;
+        const gunH = 38;
         ctx.drawImage(this.gunImg, -10, -gunH / 2, gunW, gunH);
 
         // Muzzle Flash
         if (this.muzzleFlashTimer > 0) {
           ctx.fillStyle = '#ffd700';
           ctx.beginPath();
-          ctx.arc(34, 0, 14, 0, Math.PI * 2);
+          ctx.arc(36, 0, 14, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.fillStyle = '#ff69b4';
           ctx.beginPath();
-          ctx.arc(34, 0, 8, 0, Math.PI * 2);
+          ctx.arc(36, 0, 8, 0, Math.PI * 2);
           ctx.fill();
         }
 
@@ -483,19 +463,17 @@ class Fighter {
       ctx.arc(0, 0, this.radius + 6, -Math.PI / 2, -Math.PI / 2 + ultAngle);
       ctx.stroke();
     } else {
-      ctx.lineWidth = 4.5;
+      ctx.lineWidth = 5;
       ctx.strokeStyle = '#ffd700';
-      ctx.shadowBlur = 16;
-      ctx.shadowColor = '#ffd700';
       ctx.beginPath();
       ctx.arc(0, 0, this.radius + 6, 0, Math.PI * 2);
       ctx.stroke();
     }
 
     // 5. Overhead Large Health Bar
-    const hpBarWidth = 64;
+    const hpBarWidth = 68;
     const hpBarHeight = 8;
-    const hpY = -this.radius - 16;
+    const hpY = -this.radius - 18;
 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
     ctx.fillRect(-hpBarWidth / 2, hpY, hpBarWidth, hpBarHeight);
@@ -504,14 +482,14 @@ class Fighter {
     ctx.fillStyle = hpRatio > 0.5 ? '#22c55e' : hpRatio > 0.25 ? '#eab308' : '#ef4444';
     ctx.fillRect(-hpBarWidth / 2, hpY, hpBarWidth * hpRatio, hpBarHeight);
 
-    // 6. Clean Big Bold Character Name Tag Only (No clutter below!)
-    ctx.font = "900 17px 'Black Han Sans', 'Noto Sans KR', sans-serif";
+    // 6. Clean Big Bold Character Name Tag
+    ctx.font = "900 18px 'Black Han Sans', 'Noto Sans KR', sans-serif";
     ctx.textAlign = 'center';
     ctx.lineWidth = 5;
     ctx.strokeStyle = '#000000';
-    ctx.strokeText(this.name, 0, this.radius + 22);
+    ctx.strokeText(this.name, 0, this.radius + 24);
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(this.name, 0, this.radius + 22);
+    ctx.fillText(this.name, 0, this.radius + 24);
 
     ctx.restore();
   }

@@ -53,7 +53,7 @@ body {
   min-height: 100vh;
   padding: 10px 16px;
   gap: 12px;
-  max-width: 900px;
+  max-width: 1050px;
   margin: 0 auto;
   width: 100%;
 }
@@ -368,7 +368,7 @@ body {
 
 .canvas-wrapper {
   position: relative;
-  width: min(100%, 700px);
+  width: min(96vw, 820px);
   aspect-ratio: 1 / 1;
   background: #0f111a;
   border: 2px solid rgba(255, 255, 255, 0.15);
@@ -512,7 +512,7 @@ body {
 
 /* 4. Control Panel */
 .control-panel {
-  width: min(100%, 700px);
+  width: min(96vw, 820px);
   display: flex;
   align-items: center;
   justify-content: space-between;

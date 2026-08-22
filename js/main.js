@@ -1,14 +1,15 @@
 ﻿/**
  * Main Game Controller
- * 1:1 Pure Square Reels Arena with Real-time 50:50 Split VS Cooldown & HP Bars.
+ * Super smooth 60 FPS loop with zero shadow lag, huge 1:1 square battle arena,
+ * and responsive 50:50 VS HUD.
  */
 
 class GameApp {
   constructor() {
     this.canvas = document.getElementById('battle-canvas');
     this.ctx = this.canvas.getContext('2d');
-    this.canvasWidth = 600;
-    this.canvasHeight = 600;
+    this.canvasWidth = 800;
+    this.canvasHeight = 800;
 
     // Subsystems
     this.audio = new SoundEngine();
@@ -23,9 +24,8 @@ class GameApp {
     this.isPlaying = false;
     this.isPaused = false;
     this.speedMultiplier = 1.0;
-    this.skillPauseEnabled = true;
+    this.skillPauseEnabled = false; // Disable freeze so it never stutters/lags
     this.lastTime = 0;
-    this.pauseRemainingTimer = 0;
 
     this.init();
   }
@@ -38,7 +38,7 @@ class GameApp {
     this.resetFighters();
     this.updateVsHud();
 
-    // Start Loop
+    // Start 60 FPS Game Loop
     requestAnimationFrame((t) => this.loop(t));
   }
 
@@ -50,7 +50,7 @@ class GameApp {
     const size = Math.floor(Math.min(rect.width, rect.height || rect.width));
     if (size <= 0) return;
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2); // Cap DPR to 2 to prevent GPU memory lag
     this.canvasWidth = size;
     this.canvasHeight = size;
 
@@ -103,15 +103,6 @@ class GameApp {
       });
     });
 
-    // Skill Pause Toggle
-    const toggleSkillPause = document.getElementById('toggle-skill-pause');
-    if (toggleSkillPause) {
-      toggleSkillPause.addEventListener('change', (e) => {
-        this.skillPauseEnabled = e.target.checked;
-        this.audio.playClick();
-      });
-    }
-
     // Sound Toggle
     const btnSound = document.getElementById('btn-sound');
     btnSound.addEventListener('click', () => {
@@ -142,9 +133,9 @@ class GameApp {
       document.getElementById('btn-start').classList.add('btn-warning');
     });
 
-    // Cutin Event Listener
+    // Cutin Event Listener (Non-blocking banner)
     window.addEventListener('fighter-ult-cutin', (e) => {
-      this.showUltCutin(e.detail.fighter, e.detail.ultName, e.detail.ultDesc, e.detail.shouldPause);
+      this.showUltCutin(e.detail.fighter, e.detail.ultName, e.detail.ultDesc);
     });
   }
 
@@ -158,7 +149,6 @@ class GameApp {
     const nanaData = this.allCharacterData.find(c => c.id === 'nana') || this.allCharacterData[0];
     const shibukiData = this.allCharacterData.find(c => c.id === 'shibuki') || this.allCharacterData[1];
 
-    // Left (Nana) & Right (Shibuki) Spawning
     const spawnOffsetX = this.arena.halfSize * 0.55;
     const nana = new Fighter(nanaData, this.arena.cx - spawnOffsetX, this.arena.cy);
     const shibuki = new Fighter(shibukiData, this.arena.cx + spawnOffsetX, this.arena.cy);
@@ -167,12 +157,11 @@ class GameApp {
     this.updateVsHud();
   }
 
-  // Real-Time 50:50 Split VS Cooldown & Health HUD
   updateVsHud() {
     const nana = this.fighters.find(f => f.id === 'nana');
     const shibuki = this.fighters.find(f => f.id === 'shibuki');
 
-    // 1. Update Nana (Left Half)
+    // 1. Update Nana
     if (nana) {
       const hpPercent = Math.max(0, (nana.hp / nana.maxHp) * 100);
       const hpEl = document.getElementById('hud-hp-nana');
@@ -193,7 +182,6 @@ class GameApp {
         heartsEl.innerHTML = hStr;
       }
 
-      // Skill 1 Cooldown Bar
       const s1Percent = Math.min(100, Math.floor((nana.skill1Timer / nana.skill1MaxCd) * 100));
       const s1Bar = document.getElementById('hud-s1-bar-nana');
       const s1Status = document.getElementById('hud-s1-status-nana');
@@ -209,14 +197,13 @@ class GameApp {
         }
       }
 
-      // Ult Cooldown Bar
       const ultPercent = Math.min(100, Math.floor((nana.ultTimer / nana.ultMaxCd) * 100));
       const ultBar = document.getElementById('hud-ult-bar-nana');
       const ultStatus = document.getElementById('hud-ult-status-nana');
       if (ultBar) ultBar.style.width = `${ultPercent}%`;
       if (ultStatus) {
         if (ultPercent >= 100) {
-          s1Status.textContent = '🌟 READY!';
+          ultStatus.textContent = '🌟 READY!';
           ultStatus.className = 'cd-status ready-gold';
         } else {
           ultStatus.textContent = `${ultPercent}%`;
@@ -225,7 +212,7 @@ class GameApp {
       }
     }
 
-    // 2. Update Shibuki (Right Half)
+    // 2. Update Shibuki
     if (shibuki) {
       const hpPercent = Math.max(0, (shibuki.hp / shibuki.maxHp) * 100);
       const hpEl = document.getElementById('hud-hp-shibuki');
@@ -246,7 +233,6 @@ class GameApp {
         heartsEl.innerHTML = hStr;
       }
 
-      // Skill 1 Cooldown Bar
       const s1Percent = Math.min(100, Math.floor((shibuki.skill1Timer / shibuki.skill1MaxCd) * 100));
       const s1Bar = document.getElementById('hud-s1-bar-shibuki');
       const s1Status = document.getElementById('hud-s1-status-shibuki');
@@ -262,7 +248,6 @@ class GameApp {
         }
       }
 
-      // Ult Cooldown Bar
       const ultPercent = Math.min(100, Math.floor((shibuki.ultTimer / shibuki.ultMaxCd) * 100));
       const ultBar = document.getElementById('hud-ult-bar-shibuki');
       const ultStatus = document.getElementById('hud-ult-status-shibuki');
@@ -279,7 +264,7 @@ class GameApp {
     }
   }
 
-  showUltCutin(fighter, skillName, skillDesc, shouldPause = true) {
+  showUltCutin(fighter, skillName, skillDesc) {
     const overlay = document.getElementById('ult-cutin-overlay');
     const imgEl = document.getElementById('cutin-img');
     const nameEl = document.getElementById('cutin-fighter-name');
@@ -290,10 +275,7 @@ class GameApp {
     skillEl.textContent = skillName;
     descEl.textContent = skillDesc;
 
-    if (fighter.fullArtImg && fighter.fullArtImg.src) {
-      imgEl.src = fighter.fullArtImg.src;
-      imgEl.style.display = 'block';
-    } else if (fighter.avatarImg && fighter.avatarImg.src) {
+    if (fighter.avatarImg && fighter.avatarImg.src) {
       imgEl.src = fighter.avatarImg.src;
       imgEl.style.display = 'block';
     } else {
@@ -302,13 +284,9 @@ class GameApp {
 
     overlay.classList.remove('hidden');
 
-    if (shouldPause) {
-      this.pauseRemainingTimer = 0.65;
-    }
-
     setTimeout(() => {
       overlay.classList.add('hidden');
-    }, 1000);
+    }, 1100);
   }
 
   checkGameEnd() {
@@ -333,8 +311,6 @@ class GameApp {
 
     if (winner.avatarImg && winner.avatarImg.src) {
       imgEl.src = winner.avatarImg.src;
-    } else if (winner.fullArtImg && winner.fullArtImg.src) {
-      imgEl.src = winner.fullArtImg.src;
     }
 
     nameEl.textContent = `${winner.name} 승리!`;
@@ -343,17 +319,15 @@ class GameApp {
 
   loop(currentTime) {
     if (!this.lastTime) this.lastTime = currentTime;
-    const dt = Math.min(0.06, (currentTime - this.lastTime) / 1000);
+    const dt = Math.min(0.04, (currentTime - this.lastTime) / 1000);
     this.lastTime = currentTime;
 
-    if (this.pauseRemainingTimer > 0) {
-      this.pauseRemainingTimer -= dt;
-    } else if (this.isPlaying && !this.isPaused) {
+    if (this.isPlaying && !this.isPaused) {
       const effSpeed = this.speedMultiplier;
 
       // 1. Update Fighters
       for (const f of this.fighters) {
-        f.update(dt, this.arena, this.fighters, this.skills, this.audio, this.particles, effSpeed, this.skillPauseEnabled);
+        f.update(dt, this.arena, this.fighters, this.skills, this.audio, this.particles, effSpeed, false);
       }
 
       // 2. Physics
@@ -366,7 +340,7 @@ class GameApp {
       this.checkGameEnd();
     }
 
-    // Always update 50:50 VS HUD
+    // Update 50:50 VS HUD
     this.updateVsHud();
 
     // Update Particles
@@ -390,23 +364,23 @@ class GameApp {
       this.ctx.translate(sx, sy);
     }
 
-    // 1. Draw 1:1 Square Arena
+    // 1. Arena
     this.arena.render(this.ctx);
 
-    // 2. Draw Active Skill Bullets & Horns
+    // 2. Skills & Projectiles
     this.skills.render(this.ctx);
 
-    // 3. Draw Fighters
+    // 3. Fighters
     for (const f of this.fighters) {
       f.render(this.ctx);
     }
 
-    // 4. Draw Particles & Damage Numbers
+    // 4. Particles & Damage Numbers
     this.particles.render(this.ctx);
   }
 }
 
-// Start Game on load
+// Start Game
 window.addEventListener('DOMContentLoaded', () => {
   window.gameApp = new GameApp();
 });
