@@ -1,5 +1,6 @@
 ﻿/**
  * StelLive Characters Data (Hanako Nana & Tenko Shibuki)
+ * Balanced & Polished 1v1 Matchup Data
  * Domain: hanakonana.cloud
  */
 
@@ -16,15 +17,15 @@ const STELLIVE_CHARACTERS = [
     glowColor: '#ec4899',
     emoji: '🌸',
     hp: 1000,
-    atk: 54,
-    def: 16,
-    speed: 2.2, // Relaxed reels-style bounce speed
+    atk: 52,
+    def: 14,
+    speed: 3.2, // Snappy & dynamic bouncing speed
     skill1Name: '사랑이 정밀 사격',
-    skill1Desc: '애총 [사랑이]로 적을 조준하여 강력한 핑크 탄환 1발을 발사합니다.',
-    skill1Cooldown: 4.0,
+    skill1Desc: '애총 [사랑이]로 적을 조준하여 강력한 헤비 탄환 1발을 발사합니다.',
+    skill1Cooldown: 3.8,
     ultName: '사랑이 뚜루루룰루 난사!',
-    ultDesc: '기관총처럼 18연발 탄환을 [뚜루루룰루~] 쏟아붓습니다!',
-    ultCooldown: 14.0,
+    ultDesc: '기관총처럼 16연발 탄환을 [뚜루루룰루~] 쏟아붓습니다!',
+    ultCooldown: 13.0,
     avatarUrl: 'assets/nana_avatar.png',
     fullArtUrl: 'assets/nana_full.png',
     gunImg: 'assets/sarangi_gun_aim.png',
@@ -41,16 +42,16 @@ const STELLIVE_CHARACTERS = [
     color: '#a855f7',
     glowColor: '#8b5cf6',
     emoji: '🦊',
-    hp: 1050,
-    atk: 50,
+    hp: 1100,
+    atk: 48,
     def: 18,
-    speed: 2.3, // Relaxed reels-style bounce speed
+    speed: 3.3, // Snappy & dynamic bouncing speed
     skill1Name: '도깨비 뿔 짤짤이',
     skill1Desc: '머리의 뿔 2개를 [똑, 똑] 시차를 두고 매우 자주 발사합니다.',
     skill1Cooldown: 2.2, // Fast poke cooldown
-    ultName: '캥캥이 대변신!',
-    ultDesc: '5.5초간 캥캥이(여우) 폼으로 변신! 거대화 + 초고속 돌격 + 접촉 시 날카로운 할큄 연타!',
-    ultCooldown: 15.0,
+    ultName: '캥캥이 대변신 & 폭풍 대쉬!',
+    ultDesc: '5초간 캥캥이(여우) 폼으로 변신! 즉시 초고속 돌격 대쉬 + 접촉 시 날카로운 할큄 연타!',
+    ultCooldown: 13.5,
     avatarUrl: 'assets/shibuki_avatar.png',
     fullArtUrl: 'assets/shibuki_full.png',
     foxImg: 'assets/shibuki_fox.png',
