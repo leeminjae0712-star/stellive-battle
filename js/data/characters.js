@@ -1,8 +1,8 @@
 ﻿/**
- * StelLive Characters Roster
+ * StelLive Characters Roster - Pro Balanced 3-Hero System
  * 1. 하나코 나나 (Hanako Nana) - Heavy Sniper Gunner
  * 2. 텐코 시부키 (Tenko Shibuki) - Rapid Poke & Fox Berserker (8.0s Fast Ult!)
- * 3. 유즈하 리코 (Yuzuha Riko) - Time Warden & Emerald Holy Sword (Map Center Global AOE & Time Stop)
+ * 3. 유즈하 리코 (Yuzuha Riko) - Time Warden & COLOSSAL Holy Sword (Full Map Global Strike & Chrono Stop)
  * Domain: hanakonana.cloud
  */
 
@@ -20,7 +20,7 @@ const STELLIVE_CHARACTERS = [
     emoji: '🌸',
 
     // Combat Stats
-    hp: 1350,
+    hp: 1200,
     atk: 60,
     def: 14,
     speed: 3.2,
@@ -28,12 +28,12 @@ const STELLIVE_CHARACTERS = [
     // Skill 1: Heavy Sniper Shot
     skill1Name: '사랑이 사격',
     skill1Desc: '애총 [사랑이]로 160 데미지의 묵직한 핑크 에너지탄을 조준 발사합니다.',
-    skill1Cooldown: 3.6,
+    skill1Cooldown: 4.0,
 
     // Ultimate: Machine Gun Barrage
     ultName: '사랑이 난사',
     ultDesc: '기관총처럼 16연발 탄환을 [뚜루루룰루~] 쏟아붓습니다! (발당 28딜, 총 448딜)',
-    ultCooldown: 13.0,
+    ultCooldown: 8.0,
 
     avatarUrl: 'assets/nana_avatar.png',
     fullArtUrl: 'assets/nana_full.png',
@@ -53,15 +53,15 @@ const STELLIVE_CHARACTERS = [
     emoji: '🦊',
 
     // Combat Stats
-    hp: 1550,
+    hp: 1300,
     atk: 50,
     def: 18,
     speed: 3.7,
 
     // Skill 1: Fast Double Horn Poke
     skill1Name: '뿔 발사',
-    skill1Desc: '머리의 뿔 2개를 [똑, 똑] 1.5초마다 빠르게 연사합니다. (38x2 = 76딜)',
-    skill1Cooldown: 1.5,
+    skill1Desc: '머리의 뿔 2개를 [똑, 똑] 1.2초마다 빠르게 연사합니다. (30x2 = 60딜)',
+    skill1Cooldown: 1.2,
 
     // Ultimate: 8.0s Fast Cooldown Fox Transform & Dash
     ultName: '캥캥이',
@@ -92,7 +92,7 @@ const STELLIVE_CHARACTERS = [
     def: 16,
     speed: 3.45,
 
-    // Skill 1: Jarvan E style Holy Sword Drop at Center (Global Low AOE)
+    // Skill 1: Jarvan E style Holy Sword Drop at Center (Global Full Screen AOE)
     skill1Name: '성검 투하',
     skill1Desc: '맵 한가운데에 거대한 성검을 투하하여 맵 전체에 착탄 35딜 + 3초간 12딜 전역 파동 방출!',
     skill1Cooldown: 3.8,
@@ -100,7 +100,7 @@ const STELLIVE_CHARACTERS = [
     // Ultimate: Chrono Lock (Time Stop)
     ultName: '시간 정지',
     ultDesc: '2.8초간 전장의 모든 시간을 동결! 자신만 움직이며 공격력이 1.8배 폭증합니다!',
-    ultCooldown: 13.5,
+    ultCooldown: 12.0,
 
     avatarUrl: 'assets/riko_avatar.png',
     fullArtUrl: 'assets/riko_full.png',

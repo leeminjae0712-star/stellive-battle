@@ -1,8 +1,8 @@
 ﻿/**
- * Fighter Entity - Pro Balanced 3-Hero System
- * 1. 하나코 나나 (Nana) - Heavy Sniper Gunslinger (160 dmg shot / 16-burst ult)
- * 2. 텐코 시부키 (Shibuki) - Rapid Poke (38x2) & 8.0s Fast Berserker Fox
- * 3. 유즈하 리코 (Riko) - Holy Sword Drop (Map Center & Map-Wide AOE) & 2.8s Time Stop
+ * Fighter Entity - Ultra Deluxe 3-Hero System
+ * 1. 하나코 나나 (Nana) - Heavy Sniper Gunner (160 dmg shot / 16-burst ult)
+ * 2. 텐코 시부키 (Shibuki) - Rapid Poke (30x2) & 8.0s Fast Berserker Fox
+ * 3. 유즈하 리코 (Riko) - COLOSSAL Holy Sword Drop (Map-Wide Full Attack) & 2.8s Chrono Stop
  */
 
 class Fighter {
@@ -29,7 +29,7 @@ class Fighter {
     this.vx = Math.cos(initialAngle) * this.baseSpeed;
     this.vy = Math.sin(initialAngle) * this.baseSpeed;
 
-    this.maxHp = config.hp || 1400;
+    this.maxHp = config.hp || 1300;
     this.hp = this.maxHp;
     this.atk = config.atk || 55;
     this.def = config.def || 15;
@@ -43,13 +43,13 @@ class Fighter {
 
     this.ultName = config.ultName || '궁극기';
     this.ultDesc = config.ultDesc || '';
-    this.ultMaxCd = config.ultCooldown || 13.0;
+    this.ultMaxCd = config.ultCooldown || 12.0;
     this.ultTimer = 0;
 
-    // Clash Damage Throttle to prevent number text spam
+    // Clash Damage Throttle
     this.clashCooldown = 0;
 
-    // Nana Machine Gun
+    // Nana Gunner
     this.aimAngle = initialAngle;
     this.muzzleFlashTimer = 0;
     this.isMachineGunning = false;
@@ -117,13 +117,13 @@ class Fighter {
       if (this.machineGunNextShot <= 0 && this.machineGunBulletsLeft > 0) {
         this.machineGunNextShot = this.machineGunInterval;
         this.machineGunBulletsLeft--;
-        this.muzzleFlashTimer = 0.05;
+        this.muzzleFlashTimer = 0.06;
 
         if (nearestEnemy && skillManager) {
-          const spread = (Math.random() - 0.5) * 0.25;
+          const spread = (Math.random() - 0.5) * 0.22;
           const shotAngle = this.aimAngle + spread;
-          const tipX = this.x + Math.cos(this.aimAngle) * 50;
-          const tipY = this.y + Math.sin(this.aimAngle) * 50;
+          const tipX = this.x + Math.cos(this.aimAngle) * 52;
+          const tipY = this.y + Math.sin(this.aimAngle) * 52;
           skillManager.spawnRapidBullet(this, tipX, tipY, shotAngle, particleSystem);
         }
         if (particleSystem) particleSystem.shake(2);
@@ -139,25 +139,26 @@ class Fighter {
       this.foxTransformTimer -= effDt;
       this.scratchCooldown = Math.max(0, this.scratchCooldown - effDt);
       this.foxDashCooldown -= effDt;
-      this.radius = this.baseRadius * 1.3;
+      this.radius = this.baseRadius * 1.35;
 
       if (this.foxDashCooldown <= 0 && nearestEnemy) {
-        this.foxDashCooldown = 1.0;
+        this.foxDashCooldown = 0.9;
         const dashAngle = Math.atan2(nearestEnemy.y - this.y, nearestEnemy.x - this.x);
-        const dashSpeed = this.baseSpeed * 2.5;
+        const dashSpeed = this.baseSpeed * 2.6;
         this.vx = Math.cos(dashAngle) * dashSpeed;
         this.vy = Math.sin(dashAngle) * dashSpeed;
 
         if (particleSystem) {
-          particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 50, 3);
+          particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 50, 4);
+          particleSystem.spawnSparks(this.x, this.y, '#c084fc', 6, 3);
         }
       }
 
-      if (particleSystem && Math.random() < 0.2) {
-        particleSystem.spawnSparks(
+      if (particleSystem && Math.random() < 0.3) {
+        particleSystem.spawnTrail(
           this.x + (Math.random() - 0.5) * 20,
           this.y + (Math.random() - 0.5) * 20,
-          '#c084fc', 2
+          '#a855f7', 12
         );
       }
 
@@ -165,7 +166,7 @@ class Fighter {
         this.isFoxTransformed = false;
         this.radius = this.baseRadius;
         if (particleSystem) {
-          particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 60, 3);
+          particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 60, 4);
         }
       }
     } else {
@@ -186,17 +187,18 @@ class Fighter {
       }
     }
 
-    // ── 4. Riko Time Stop Slash Bonus Movement ──
+    // ── 4. Riko Time Stop Rapid Slash Movement ──
     if (skillManager && skillManager.isTimeStopped && skillManager.timeStopOwner === this) {
       if (nearestEnemy) {
         const dist = Math.hypot(nearestEnemy.x - this.x, nearestEnemy.y - this.y);
-        if (dist < 120 && Math.random() < 0.2) {
-          this.swordSlashTimer = 0.2;
+        if (dist < 130 && Math.random() < 0.25) {
+          this.swordSlashTimer = 0.25;
           try { if (soundEngine) soundEngine.playSlash(); } catch(e) {}
           if (particleSystem) {
-            particleSystem.spawnScratch(nearestEnemy.x, nearestEnemy.y, '#10b981');
+            particleSystem.spawnSlash(nearestEnemy.x, nearestEnemy.y, Math.random() * Math.PI, '#10b981', 80);
+            particleSystem.spawnSparks(nearestEnemy.x, nearestEnemy.y, '#34d399', 8, 4);
           }
-          nearestEnemy.takeDamage(42, this, particleSystem, 'crit');
+          nearestEnemy.takeDamage(45, this, particleSystem, 'crit');
         }
       }
     }
@@ -218,7 +220,7 @@ class Fighter {
     // ── 6. Movement ──
     let speedMult = speedMultiplier;
     if (skillManager && skillManager.isTimeStopped && skillManager.timeStopOwner === this) {
-      speedMult *= 1.5;
+      speedMult *= 1.6;
     }
     this.x += this.vx * speedMult;
     this.y += this.vy * speedMult;
@@ -229,26 +231,25 @@ class Fighter {
 
     if (this.id === 'nana') {
       if (!enemy) return;
-      this.muzzleFlashTimer = 0.22;
-      const tipX = this.x + Math.cos(this.aimAngle) * 52;
-      const tipY = this.y + Math.sin(this.aimAngle) * 52;
+      this.muzzleFlashTimer = 0.25;
+      const tipX = this.x + Math.cos(this.aimAngle) * 54;
+      const tipY = this.y + Math.sin(this.aimAngle) * 54;
       skillManager.spawnHeavyBullet(this, tipX, tipY, this.aimAngle, particleSystem);
       if (particleSystem) {
-        particleSystem.spawnDamageText(this.x, this.y - 28, this.skill1Name, 'skill', this.color);
-        particleSystem.shake(5);
+        particleSystem.spawnDamageText(this.x, this.y - 30, '💖 ' + this.skill1Name, 'skill', this.color);
+        particleSystem.shake(6);
       }
 
     } else if (this.id === 'shibuki') {
       if (!enemy) return;
       skillManager.spawnShibukiHorn(this, enemy, this.hornImg, particleSystem, 1);
-      this.pendingHorns.push({ delay: 0.18 });
+      this.pendingHorns.push({ delay: 0.16 });
       if (particleSystem) {
-        particleSystem.spawnDamageText(this.x, this.y - 28, this.skill1Name, 'skill', this.color);
+        particleSystem.spawnDamageText(this.x, this.y - 30, '🦊 ' + this.skill1Name, 'skill', this.color);
       }
 
     } else if (this.id === 'riko') {
-      // Fixed at Arena Center (No tracking bug!)
-      this.swordSlashTimer = 0.35;
+      this.swordSlashTimer = 0.4;
       const centerX = arena ? arena.cx : 400;
       const centerY = arena ? arena.cy : 400;
       skillManager.spawnRikoSwordDrop(this, centerX, centerY, this.swordImg, particleSystem, soundEngine);
@@ -261,9 +262,10 @@ class Fighter {
 
     try { if (soundEngine) soundEngine.playUlt(); } catch(e) {}
     if (particleSystem) {
-      particleSystem.shake(14);
-      particleSystem.spawnShockwave(this.x, this.y, this.glowColor, 120, 6);
-      particleSystem.spawnDamageText(this.x, this.y - 32, `★ ${this.ultName} ★`, 'ult', '#ffd700');
+      particleSystem.flash(this.color, 0.4);
+      particleSystem.shake(16);
+      particleSystem.spawnShockwave(this.x, this.y, this.glowColor, 140, 6);
+      particleSystem.spawnDamageText(this.x, this.y - 35, `★ ${this.ultName} ★`, 'ult', '#ffd700');
     }
 
     try {
@@ -286,8 +288,8 @@ class Fighter {
 
       if (enemy) {
         const angle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
-        this.vx = Math.cos(angle) * this.baseSpeed * 3.0;
-        this.vy = Math.sin(angle) * this.baseSpeed * 3.0;
+        this.vx = Math.cos(angle) * this.baseSpeed * 3.2;
+        this.vy = Math.sin(angle) * this.baseSpeed * 3.2;
       }
 
     } else if (this.id === 'riko') {
@@ -296,8 +298,8 @@ class Fighter {
 
       if (enemy) {
         const angle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
-        this.vx = Math.cos(angle) * this.baseSpeed * 2.2;
-        this.vy = Math.sin(angle) * this.baseSpeed * 2.2;
+        this.vx = Math.cos(angle) * this.baseSpeed * 2.4;
+        this.vy = Math.sin(angle) * this.baseSpeed * 2.4;
       }
     }
   }
@@ -309,15 +311,16 @@ class Fighter {
     enemy.takeDamage(dmg, this, particleSystem, 'crit');
 
     if (particleSystem) {
-      try { particleSystem.spawnScratch(enemy.x, enemy.y, '#c084fc'); } catch(e) {}
-      particleSystem.shake(3);
+      particleSystem.spawnScratch(enemy.x, enemy.y, '#c084fc');
+      particleSystem.spawnSparks(enemy.x, enemy.y, '#c084fc', 8, 4);
+      particleSystem.shake(4);
     }
   }
 
   takeDamage(amount, attacker, particleSystem, type = 'normal') {
     if (this.isDead || this.invulnerableTimer > 0) return 0;
 
-    let finalDmg = Math.max(3, Math.floor(amount - this.def * 0.15));
+    let finalDmg = Math.max(3, Math.floor(amount - this.def * 0.12));
 
     if (attacker && attacker.id === 'riko' && window.gameApp && window.gameApp.skills && window.gameApp.skills.isTimeStopped) {
       finalDmg = Math.floor(finalDmg * 1.8);
@@ -326,7 +329,6 @@ class Fighter {
     this.hp -= finalDmg;
 
     if (particleSystem) {
-      // Only spawn floating numbers for meaningful hits (>= 8 damage) to prevent spam
       if (finalDmg >= 8 || type === 'crit') {
         particleSystem.spawnDamageNumber(this.x, this.y, finalDmg, type);
       }
@@ -340,8 +342,10 @@ class Fighter {
   die(particleSystem) {
     this.isDead = true;
     if (particleSystem) {
-      particleSystem.spawnShockwave(this.x, this.y, '#ef4444', 100, 8);
-      particleSystem.spawnSparks(this.x, this.y, '#ffffff', 18);
+      particleSystem.flash('#ef4444', 0.5);
+      particleSystem.shake(16);
+      particleSystem.spawnShockwave(this.x, this.y, '#ef4444', 120, 8);
+      particleSystem.spawnSparks(this.x, this.y, '#ffffff', 20, 6);
       particleSystem.spawnDamageText(this.x, this.y, '💀 K.O.', 'crit', '#ef4444');
     }
   }
@@ -363,6 +367,9 @@ class Fighter {
 
     // ── Fox Form ──
     if (this.isFoxTransformed) {
+      ctx.shadowColor = '#a855f7';
+      ctx.shadowBlur = 20;
+
       if (this.foxImg && this.foxImg.complete && this.foxImg.naturalWidth > 0) {
         const foxW = this.radius * 2.8;
         const foxH = foxW * (this.foxImg.naturalHeight / this.foxImg.naturalWidth);
@@ -373,9 +380,12 @@ class Fighter {
       }
     } else {
       // ── Normal Avatar Circle ──
-      ctx.fillStyle = '#171926';
+      ctx.shadowColor = this.color;
+      ctx.shadowBlur = 12;
+
+      ctx.fillStyle = '#13151f';
       ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fill();
-      ctx.lineWidth = 5; ctx.strokeStyle = this.color; ctx.stroke();
+      ctx.lineWidth = 4; ctx.strokeStyle = this.color; ctx.stroke();
 
       if (this.avatarImg && this.avatarImg.complete && this.avatarImg.naturalWidth > 0) {
         ctx.save();
@@ -390,17 +400,17 @@ class Fighter {
       // ── Nana Gun '사랑이' ──
       if (this.id === 'nana' && this.gunImg && this.gunImg.complete && this.gunImg.naturalWidth > 0) {
         ctx.save();
-        const gd = this.radius * 0.85;
+        const gd = this.radius * 0.88;
         ctx.translate(Math.cos(this.aimAngle) * gd, Math.sin(this.aimAngle) * gd);
         ctx.rotate(this.aimAngle);
         if (Math.abs(this.aimAngle) > Math.PI / 2) ctx.scale(1, -1);
-        ctx.drawImage(this.gunImg, -10, -19, 46, 38);
+        ctx.drawImage(this.gunImg, -10, -19, 48, 40);
 
         if (this.muzzleFlashTimer > 0) {
           ctx.fillStyle = '#ffd700';
-          ctx.beginPath(); ctx.arc(36, 0, 16, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(38, 0, 18, 0, Math.PI * 2); ctx.fill();
           ctx.fillStyle = '#ff69b4';
-          ctx.beginPath(); ctx.arc(36, 0, 9, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(38, 0, 10, 0, Math.PI * 2); ctx.fill();
         }
         ctx.restore();
       }
@@ -408,31 +418,35 @@ class Fighter {
       // ── Riko Sword '성검' ──
       if (this.id === 'riko' && this.swordImg && this.swordImg.complete && this.swordImg.naturalWidth > 0) {
         ctx.save();
-        const sd = this.radius * 0.9;
+        const sd = this.radius * 0.92;
         ctx.translate(Math.cos(this.aimAngle) * sd, Math.sin(this.aimAngle) * sd);
-        ctx.rotate(this.aimAngle + Math.PI / 4 + (this.swordSlashTimer > 0 ? Math.sin(Date.now() * 0.05) * 0.8 : 0));
-        ctx.drawImage(this.swordImg, -12, -45, 24, 80);
+        ctx.rotate(this.aimAngle + Math.PI / 4 + (this.swordSlashTimer > 0 ? Math.sin(Date.now() * 0.06) * 1.0 : 0));
+        ctx.shadowColor = '#34d399';
+        ctx.shadowBlur = 15;
+        ctx.drawImage(this.swordImg, -14, -50, 28, 90);
         ctx.restore();
       }
     }
+
+    ctx.shadowBlur = 0;
 
     // ── Ultimate Charge Ring ──
     const ultRatio = Math.min(1.0, this.ultTimer / this.ultMaxCd);
     if (ultRatio < 1.0) {
       ctx.lineWidth = 4;
-      ctx.strokeStyle = 'rgba(234, 179, 8, 0.7)';
+      ctx.strokeStyle = 'rgba(234, 179, 8, 0.75)';
       ctx.beginPath();
       ctx.arc(0, 0, this.radius + 7, -Math.PI / 2, -Math.PI / 2 + ultRatio * Math.PI * 2);
       ctx.stroke();
     } else {
-      const pulse = 0.6 + 0.4 * Math.sin(Date.now() * 0.008);
+      const pulse = 0.6 + 0.4 * Math.sin(Date.now() * 0.009);
       ctx.lineWidth = 5;
       ctx.strokeStyle = `rgba(255, 215, 0, ${pulse})`;
       ctx.beginPath(); ctx.arc(0, 0, this.radius + 7, 0, Math.PI * 2); ctx.stroke();
     }
 
     // ── Overhead HP Bar ──
-    const barW = 72, barH = 9, barY = -this.radius - 20;
+    const barW = 76, barH = 9, barY = -this.radius - 22;
     ctx.fillStyle = 'rgba(0,0,0,0.85)';
     ctx.fillRect(-barW / 2 - 1, barY - 1, barW + 2, barH + 2);
 
@@ -442,7 +456,7 @@ class Fighter {
     ctx.fillRect(-barW / 2, barY, barW * hpRatio, barH);
 
     // ── Name Tag ──
-    ctx.font = "900 18px 'Black Han Sans', 'Noto Sans KR', sans-serif";
+    ctx.font = "900 17px 'Black Han Sans', 'Noto Sans KR', sans-serif";
     ctx.textAlign = 'center';
     ctx.lineWidth = 5;
     ctx.strokeStyle = '#000000';
