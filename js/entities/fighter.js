@@ -1,6 +1,6 @@
 ﻿/**
  * Fighter Entity Class
- * High performance, zero shadow blur overhead, 60 FPS smooth rendering.
+ * High performance, guaranteed continuous velocity, 60 FPS smooth rendering.
  */
 
 class Fighter {
@@ -23,7 +23,7 @@ class Fighter {
     this.radius = this.baseRadius;
     this.mass = 1.0;
 
-    this.baseSpeed = config.speed || 3.2;
+    this.baseSpeed = config.speed || 3.5;
     const initialAngle = Math.random() * Math.PI * 2;
     this.vx = Math.cos(initialAngle) * this.baseSpeed;
     this.vy = Math.sin(initialAngle) * this.baseSpeed;
@@ -66,8 +66,6 @@ class Fighter {
 
     // Status Timers
     this.invulnerableTimer = 0;
-    this.isFrozen = false;
-    this.freezeTimer = 0;
 
     // Asset Images
     this.avatarImg = null;
@@ -208,45 +206,9 @@ class Fighter {
       }
     }
 
-    // 5. Physics Movement
-    const targetSpeed = this.isFoxTransformed ? this.baseSpeed * 1.6 : this.baseSpeed;
-    const currentSpeed = Math.hypot(this.vx, this.vy);
-
-    if (currentSpeed < 0.05) {
-      const a = Math.random() * Math.PI * 2;
-      this.vx = Math.cos(a) * targetSpeed;
-      this.vy = Math.sin(a) * targetSpeed;
-    } else {
-      const f = (targetSpeed / currentSpeed) * 0.08;
-      this.vx += (this.vx / currentSpeed) * targetSpeed * f - this.vx * f;
-      this.vy += (this.vy / currentSpeed) * targetSpeed * f - this.vy * f;
-    }
-
+    // 5. Unstoppable Continuous Movement
     this.x += this.vx * speedMultiplier;
     this.y += this.vy * speedMultiplier;
-
-    // 6. Arena Wall Bounce
-    if (arena) {
-      if (this.x - this.radius <= arena.left) {
-        this.x = arena.left + this.radius;
-        this.vx = Math.abs(this.vx);
-        if (particleSystem) particleSystem.spawnSparks(this.x, this.y, this.color, 4, 3);
-      } else if (this.x + this.radius >= arena.right) {
-        this.x = arena.right - this.radius;
-        this.vx = -Math.abs(this.vx);
-        if (particleSystem) particleSystem.spawnSparks(this.x, this.y, this.color, 4, 3);
-      }
-
-      if (this.y - this.radius <= arena.top) {
-        this.y = arena.top + this.radius;
-        this.vy = Math.abs(this.vy);
-        if (particleSystem) particleSystem.spawnSparks(this.x, this.y, this.color, 4, 3);
-      } else if (this.y + this.radius >= arena.bottom) {
-        this.y = arena.bottom - this.radius;
-        this.vy = -Math.abs(this.vy);
-        if (particleSystem) particleSystem.spawnSparks(this.x, this.y, this.color, 4, 3);
-      }
-    }
   }
 
   triggerSkill1(enemy, skillManager, soundEngine, particleSystem) {
@@ -391,7 +353,6 @@ class Fighter {
 
     } else {
       // 2. Normal Character Avatar Render
-      // Base Body
       ctx.fillStyle = '#171926';
       ctx.beginPath();
       ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
