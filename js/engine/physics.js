@@ -1,8 +1,8 @@
 ﻿/**
- * Physics Engine - Pro Balanced 3-Hero Support
- * - Minimal body clash damage (4-6)
+ * Physics Engine - Clean, Smooth & Clutter-Free
+ * - Body clash damage is strictly throttled (once per 0.45s)
  * - Safe unstick separation
- * - Time Stop freeze check (frozen fighters do not push or bounce)
+ * - Time Stop freeze check
  */
 
 class PhysicsEngine {
@@ -24,7 +24,7 @@ class PhysicsEngine {
       if (f.isDead) continue;
 
       if (skillManager && skillManager.isTimeStopped && skillManager.timeStopOwner !== f) {
-        continue; // Frozen in time
+        continue;
       }
 
       const target = f.isFoxTransformed ? f.baseSpeed * 1.6 : f.baseSpeed;
@@ -86,17 +86,22 @@ class PhysicsEngine {
           if (f1.isFoxTransformed && !f1Frozen) f1.applyFoxScratch(f2, particleSystem);
           if (f2.isFoxTransformed && !f2Frozen) f2.applyFoxScratch(f1, particleSystem);
 
-          // Minimal clash damage
-          const clashDmg = Math.max(4, Math.floor(Math.hypot(f1.vx - f2.vx, f1.vy - f2.vy) * 0.8));
-          f1.takeDamage(clashDmg, f2, particleSystem);
-          f2.takeDamage(clashDmg, f1, particleSystem);
+          // Throttled Clash Damage (Once per 0.45s to avoid screen number flood!)
+          if (f1.clashCooldown <= 0 && f2.clashCooldown <= 0) {
+            f1.clashCooldown = 0.45;
+            f2.clashCooldown = 0.45;
 
-          if (particleSystem) {
-            const mx = (f1.x + f2.x) / 2, my = (f1.y + f2.y) / 2;
-            particleSystem.spawnSparks(mx, my, '#ffffff', 5, 3);
-            particleSystem.spawnShockwave(mx, my, '#ffd700', 22, 2);
+            const clashDmg = Math.max(4, Math.floor(Math.hypot(f1.vx - f2.vx, f1.vy - f2.vy) * 0.8));
+            f1.takeDamage(clashDmg, f2, particleSystem, 'normal');
+            f2.takeDamage(clashDmg, f1, particleSystem, 'normal');
+
+            if (particleSystem) {
+              const mx = (f1.x + f2.x) / 2, my = (f1.y + f2.y) / 2;
+              particleSystem.spawnSparks(mx, my, '#ffffff', 4, 2);
+              particleSystem.spawnShockwave(mx, my, '#ffd700', 18, 2);
+            }
+            try { if (soundEngine) soundEngine.playClash(); } catch(e) {}
           }
-          try { if (soundEngine) soundEngine.playClash(); } catch(e) {}
         }
       }
     }
@@ -125,7 +130,7 @@ class PhysicsEngine {
         f.y = arena.bottom - f.radius; f.vy = -Math.abs(f.vy);
         if (Math.abs(f.vy) < 1) f.vy = -2; hitWall = true;
       }
-      if (hitWall && particleSystem) particleSystem.spawnSparks(f.x, f.y, f.color, 3, 2);
+      if (hitWall && particleSystem) particleSystem.spawnSparks(f.x, f.y, f.color, 2, 2);
     }
   }
 }

@@ -2,7 +2,7 @@
  * Fighter Entity - Pro Balanced 3-Hero System
  * 1. 하나코 나나 (Nana) - Heavy Sniper Gunslinger (160 dmg shot / 16-burst ult)
  * 2. 텐코 시부키 (Shibuki) - Rapid Poke (38x2) & 8.0s Fast Berserker Fox
- * 3. 유즈하 리코 (Riko) - Holy Sword Drop (Jarvan E style) & 2.8s Time Stop
+ * 3. 유즈하 리코 (Riko) - Holy Sword Drop (Map Center & Map-Wide AOE) & 2.8s Time Stop
  */
 
 class Fighter {
@@ -46,7 +46,10 @@ class Fighter {
     this.ultMaxCd = config.ultCooldown || 13.0;
     this.ultTimer = 0;
 
-    // Nana Machine Gun ("사랑이 난사")
+    // Clash Damage Throttle to prevent number text spam
+    this.clashCooldown = 0;
+
+    // Nana Machine Gun
     this.aimAngle = initialAngle;
     this.muzzleFlashTimer = 0;
     this.isMachineGunning = false;
@@ -55,7 +58,7 @@ class Fighter {
     this.machineGunInterval = 0.08;
     this.machineGunBulletsLeft = 0;
 
-    // Shibuki Fox Transform ("캥캥이")
+    // Shibuki Fox Transform
     this.isFoxTransformed = false;
     this.foxTransformTimer = 0;
     this.foxMaxDuration = 3.5;
@@ -86,10 +89,9 @@ class Fighter {
     if (this.isDead) return;
 
     // ── Time Stop Freeze Check ──
-    // If Time Stop is active and this fighter is NOT the owner, freeze completely!
     const isFrozenInTime = skillManager && skillManager.isTimeStopped && skillManager.timeStopOwner !== this;
     if (isFrozenInTime) {
-      return; // Do not move, do not reduce cooldowns, do not cast!
+      return; // Frozen in time
     }
 
     const effDt = dt * speedMultiplier;
@@ -105,6 +107,7 @@ class Fighter {
     if (this.muzzleFlashTimer > 0) this.muzzleFlashTimer -= effDt;
     if (this.swordSlashTimer > 0) this.swordSlashTimer -= effDt;
     if (this.invulnerableTimer > 0) this.invulnerableTimer -= effDt;
+    if (this.clashCooldown > 0) this.clashCooldown -= effDt;
 
     // ── 1. Nana Machine Gun Burst ──
     if (this.isMachineGunning) {
@@ -139,22 +142,21 @@ class Fighter {
       this.radius = this.baseRadius * 1.3;
 
       if (this.foxDashCooldown <= 0 && nearestEnemy) {
-        this.foxDashCooldown = 0.9;
+        this.foxDashCooldown = 1.0;
         const dashAngle = Math.atan2(nearestEnemy.y - this.y, nearestEnemy.x - this.x);
         const dashSpeed = this.baseSpeed * 2.5;
         this.vx = Math.cos(dashAngle) * dashSpeed;
         this.vy = Math.sin(dashAngle) * dashSpeed;
 
         if (particleSystem) {
-          particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 55, 3);
-          particleSystem.spawnDamageText(this.x, this.y - 14, '대쉬!', 'buff', '#c084fc');
+          particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 50, 3);
         }
       }
 
-      if (particleSystem && Math.random() < 0.25) {
+      if (particleSystem && Math.random() < 0.2) {
         particleSystem.spawnSparks(
-          this.x + (Math.random() - 0.5) * 25,
-          this.y + (Math.random() - 0.5) * 25,
+          this.x + (Math.random() - 0.5) * 20,
+          this.y + (Math.random() - 0.5) * 20,
           '#c084fc', 2
         );
       }
@@ -163,8 +165,7 @@ class Fighter {
         this.isFoxTransformed = false;
         this.radius = this.baseRadius;
         if (particleSystem) {
-          particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 65, 4);
-          particleSystem.spawnDamageText(this.x, this.y, '변신 해제!', 'buff', '#e2e8f0');
+          particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 60, 3);
         }
       }
     } else {
@@ -187,7 +188,6 @@ class Fighter {
 
     // ── 4. Riko Time Stop Slash Bonus Movement ──
     if (skillManager && skillManager.isTimeStopped && skillManager.timeStopOwner === this) {
-      // Free Time Stop Owner movement & periodic sword slash trails
       if (nearestEnemy) {
         const dist = Math.hypot(nearestEnemy.x - this.x, nearestEnemy.y - this.y);
         if (dist < 120 && Math.random() < 0.2) {
@@ -196,7 +196,6 @@ class Fighter {
           if (particleSystem) {
             particleSystem.spawnScratch(nearestEnemy.x, nearestEnemy.y, '#10b981');
           }
-          // Extra Time Stop enhanced damage
           nearestEnemy.takeDamage(42, this, particleSystem, 'crit');
         }
       }
@@ -206,12 +205,12 @@ class Fighter {
     this.skill1Timer += effDt;
     this.ultTimer += effDt;
 
-    if (this.skill1Timer >= this.skill1MaxCd && nearestEnemy) {
+    if (this.skill1Timer >= this.skill1MaxCd) {
       this.triggerSkill1(nearestEnemy, skillManager, soundEngine, particleSystem, arena);
       this.skill1Timer = 0;
     }
 
-    if (this.ultTimer >= this.ultMaxCd && nearestEnemy) {
+    if (this.ultTimer >= this.ultMaxCd) {
       this.triggerUltimate(allFighters, skillManager, soundEngine, particleSystem, arena);
       this.ultTimer = 0;
     }
@@ -219,40 +218,40 @@ class Fighter {
     // ── 6. Movement ──
     let speedMult = speedMultiplier;
     if (skillManager && skillManager.isTimeStopped && skillManager.timeStopOwner === this) {
-      speedMult *= 1.5; // +50% speed during time stop
+      speedMult *= 1.5;
     }
     this.x += this.vx * speedMult;
     this.y += this.vy * speedMult;
   }
 
   triggerSkill1(enemy, skillManager, soundEngine, particleSystem, arena) {
-    if (!skillManager || !enemy) return;
-
-    if (particleSystem) {
-      particleSystem.spawnDamageText(this.x, this.y - 28, this.skill1Name, 'skill', this.color);
-      particleSystem.spawnShockwave(this.x, this.y, this.glowColor, 40, 2);
-    }
+    if (!skillManager) return;
 
     if (this.id === 'nana') {
-      // Heavy Sniper Shot
+      if (!enemy) return;
       this.muzzleFlashTimer = 0.22;
       const tipX = this.x + Math.cos(this.aimAngle) * 52;
       const tipY = this.y + Math.sin(this.aimAngle) * 52;
       skillManager.spawnHeavyBullet(this, tipX, tipY, this.aimAngle, particleSystem);
-      if (particleSystem) particleSystem.shake(5);
+      if (particleSystem) {
+        particleSystem.spawnDamageText(this.x, this.y - 28, this.skill1Name, 'skill', this.color);
+        particleSystem.shake(5);
+      }
 
     } else if (this.id === 'shibuki') {
-      // Rapid Double Horn Poke
+      if (!enemy) return;
       skillManager.spawnShibukiHorn(this, enemy, this.hornImg, particleSystem, 1);
       this.pendingHorns.push({ delay: 0.18 });
+      if (particleSystem) {
+        particleSystem.spawnDamageText(this.x, this.y - 28, this.skill1Name, 'skill', this.color);
+      }
 
     } else if (this.id === 'riko') {
-      // Jarvan E style Holy Sword Drop
+      // Fixed at Arena Center (No tracking bug!)
       this.swordSlashTimer = 0.35;
-      // Target area: midpoint between arena center and enemy
-      const targetX = arena ? (arena.cx + enemy.x) * 0.5 : enemy.x;
-      const targetY = arena ? (arena.cy + enemy.y) * 0.5 : enemy.y;
-      skillManager.spawnRikoSwordDrop(this, targetX, targetY, this.swordImg, particleSystem, soundEngine);
+      const centerX = arena ? arena.cx : 400;
+      const centerY = arena ? arena.cy : 400;
+      skillManager.spawnRikoSwordDrop(this, centerX, centerY, this.swordImg, particleSystem, soundEngine);
     }
   }
 
@@ -262,8 +261,8 @@ class Fighter {
 
     try { if (soundEngine) soundEngine.playUlt(); } catch(e) {}
     if (particleSystem) {
-      particleSystem.shake(16);
-      particleSystem.spawnShockwave(this.x, this.y, this.glowColor, 130, 7);
+      particleSystem.shake(14);
+      particleSystem.spawnShockwave(this.x, this.y, this.glowColor, 120, 6);
       particleSystem.spawnDamageText(this.x, this.y - 32, `★ ${this.ultName} ★`, 'ult', '#ffd700');
     }
 
@@ -283,7 +282,7 @@ class Fighter {
       this.isFoxTransformed = true;
       this.foxTransformTimer = this.foxMaxDuration;
       this.invulnerableTimer = 0.6;
-      this.foxDashCooldown = 0.2; // Instant first dash
+      this.foxDashCooldown = 0.2;
 
       if (enemy) {
         const angle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
@@ -291,13 +290,7 @@ class Fighter {
         this.vy = Math.sin(angle) * this.baseSpeed * 3.0;
       }
 
-      if (particleSystem) {
-        particleSystem.spawnShockwave(this.x, this.y, '#c084fc', 150, 8);
-        particleSystem.spawnDamageText(this.x, this.y, '🦊 캥캥이 돌격!', 'buff', '#a855f7');
-      }
-
     } else if (this.id === 'riko') {
-      // 2.8s Time Stop (Chrono Lock)
       skillManager.triggerTimeStop(this, 2.8, soundEngine, particleSystem);
       this.invulnerableTimer = 1.0;
 
@@ -309,17 +302,15 @@ class Fighter {
     }
   }
 
-  // Fox scratch
   applyFoxScratch(enemy, particleSystem) {
     if (!this.isFoxTransformed || this.scratchCooldown > 0 || !enemy || enemy.isDead) return;
-    this.scratchCooldown = 0.3;
+    this.scratchCooldown = 0.35;
     const dmg = 35;
     enemy.takeDamage(dmg, this, particleSystem, 'crit');
 
     if (particleSystem) {
       try { particleSystem.spawnScratch(enemy.x, enemy.y, '#c084fc'); } catch(e) {}
-      particleSystem.spawnDamageText(enemy.x, enemy.y, '할큄!', 'crit', '#f43f5e');
-      particleSystem.shake(4);
+      particleSystem.shake(3);
     }
   }
 
@@ -328,7 +319,6 @@ class Fighter {
 
     let finalDmg = Math.max(3, Math.floor(amount - this.def * 0.15));
 
-    // If attacker is Riko during Time Stop, +80% bonus damage
     if (attacker && attacker.id === 'riko' && window.gameApp && window.gameApp.skills && window.gameApp.skills.isTimeStopped) {
       finalDmg = Math.floor(finalDmg * 1.8);
     }
@@ -336,8 +326,11 @@ class Fighter {
     this.hp -= finalDmg;
 
     if (particleSystem) {
-      particleSystem.spawnDamageNumber(this.x, this.y, finalDmg, type);
-      particleSystem.spawnSparks(this.x, this.y, this.color, type === 'crit' ? 8 : 3);
+      // Only spawn floating numbers for meaningful hits (>= 8 damage) to prevent spam
+      if (finalDmg >= 8 || type === 'crit') {
+        particleSystem.spawnDamageNumber(this.x, this.y, finalDmg, type);
+      }
+      particleSystem.spawnSparks(this.x, this.y, this.color, type === 'crit' ? 6 : 2);
     }
 
     if (this.hp <= 0) { this.hp = 0; this.die(particleSystem); }
@@ -347,8 +340,8 @@ class Fighter {
   die(particleSystem) {
     this.isDead = true;
     if (particleSystem) {
-      particleSystem.spawnShockwave(this.x, this.y, '#ef4444', 100, 10);
-      particleSystem.spawnSparks(this.x, this.y, '#ffffff', 20);
+      particleSystem.spawnShockwave(this.x, this.y, '#ef4444', 100, 8);
+      particleSystem.spawnSparks(this.x, this.y, '#ffffff', 18);
       particleSystem.spawnDamageText(this.x, this.y, '💀 K.O.', 'crit', '#ef4444');
     }
   }

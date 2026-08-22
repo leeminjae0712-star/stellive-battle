@@ -2,7 +2,7 @@
  * StelLive Characters Roster
  * 1. 하나코 나나 (Hanako Nana) - Heavy Sniper Gunner
  * 2. 텐코 시부키 (Tenko Shibuki) - Rapid Poke & Fox Berserker (8.0s Fast Ult!)
- * 3. 유즈하 리코 (Yuzuha Riko) - Time Warden & Emerald Holy Sword (Sword Drop & Time Stop)
+ * 3. 유즈하 리코 (Yuzuha Riko) - Time Warden & Emerald Holy Sword (Map Center Global AOE & Time Stop)
  * Domain: hanakonana.cloud
  */
 
@@ -66,7 +66,7 @@ const STELLIVE_CHARACTERS = [
     // Ultimate: 8.0s Fast Cooldown Fox Transform & Dash
     ultName: '캥캥이',
     ultDesc: '3.5초간 캥캥이(여우) 폼 변신! 초고속 대쉬 & 접촉 시 35딜 할큄 연타!',
-    ultCooldown: 8.0, // Reduced as requested!
+    ultCooldown: 8.0,
 
     avatarUrl: 'assets/shibuki_avatar.png',
     fullArtUrl: 'assets/shibuki_full.png',
@@ -92,9 +92,9 @@ const STELLIVE_CHARACTERS = [
     def: 16,
     speed: 3.45,
 
-    // Skill 1: Jarvan E style Holy Sword Drop
+    // Skill 1: Jarvan E style Holy Sword Drop at Center (Global Low AOE)
     skill1Name: '성검 투하',
-    skill1Desc: '전장에 거대한 에메랄드 성검을 투하하여 착탄 95 광역딜 + 3초간 22딜 파동 방출!',
+    skill1Desc: '맵 한가운데에 거대한 성검을 투하하여 맵 전체에 착탄 35딜 + 3초간 12딜 전역 파동 방출!',
     skill1Cooldown: 3.8,
 
     // Ultimate: Chrono Lock (Time Stop)
