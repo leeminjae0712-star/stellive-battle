@@ -1,5 +1,5 @@
 /**
- * Physics Engine - Clean, Smooth & Wall-Slam Enabled
+ * Physics Engine - Multi-Bounce Super Wall-Slam Enabled
  */
 
 class PhysicsEngine {
@@ -13,15 +13,20 @@ class PhysicsEngine {
     // 1. Resolve Collisions
     this.resolveFighterCollisions(fighters, soundEngine, particleSystem);
 
-    // 2. Resolve Wall Bounces & Wall Slam Damage
+    // 2. Resolve Wall Bounces & 3-Bounce Wall Slam Damage
     this.resolveArenaCollisions(fighters, arena, soundEngine, particleSystem);
 
-    // 3. Normalization (Only for non-stunned fighters)
+    // 3. Normalization (Only for non-stunned, non-slamming fighters)
     for (const f of fighters) {
       if (f.isDead || f.stunTimer > 0) continue;
 
-      if (f.isWallSlamming) {
-        // Maintain high slam speed until hitting a wall
+      if (f.wallBounceLeft > 0) {
+        // High speed bounce maintained
+        continue;
+      }
+
+      if (f.isRikoUltDashing) {
+        // High speed dash maintained
         continue;
       }
 
@@ -60,6 +65,13 @@ class PhysicsEngine {
           f1.y -= ny * overlap * 0.5;
           f2.x += nx * overlap * 0.5;
           f2.y += ny * overlap * 0.5;
+
+          // ═══ Riko Ult Dash Hit Trigger on Contact! ═══
+          if (f1.isRikoUltDashing && f1.id === 'riko') {
+            f1.applyRikoUltSmash(f2, particleSystem, soundEngine);
+          } else if (f2.isRikoUltDashing && f2.id === 'riko') {
+            f2.applyRikoUltSmash(f1, particleSystem, soundEngine);
+          }
 
           const rvx = f2.vx - f1.vx, rvy = f2.vy - f1.vy;
           const velN = rvx * nx + rvy * ny;
@@ -119,16 +131,23 @@ class PhysicsEngine {
       }
 
       if (hitWall) {
-        // Check for Wall Slam!
-        if (f.isWallSlamming) {
-          f.isWallSlamming = false;
-          const slamDmg = 100;
+        // ═══ Multi-Bounce Super Wall Slam (3 Bounces of 50 DMG each!) ═══
+        if (f.wallBounceLeft > 0) {
+          f.wallBounceLeft--;
+          const bounceCount = 3 - f.wallBounceLeft;
+          const slamDmg = 50;
           f.takeDamage(slamDmg, f.wallSlamAttacker || null, particleSystem, 'crit');
 
+          // Add extra elastic kick to keep bouncing violently
+          f.vx *= 1.05;
+          f.vy *= 1.05;
+
+          const slamLabel = bounceCount === 1 ? '💥 쿵! (벽쾅 50딜)' : bounceCount === 2 ? '💥 쾅! (2단벽쾅 50딜)' : '💥 콰앙! (3단벽쾅 50딜)';
+
           if (particleSystem) {
-            particleSystem.shake(12);
+            particleSystem.shake(14);
             particleSystem.spawnSparks(f.x, f.y, '#ef4444', 16, 6);
-            particleSystem.spawnDamageText(f.x, f.y - 20, '💥 WALL SLAM (벽쾅 100딜)!', 'crit', '#ef4444');
+            particleSystem.spawnDamageText(f.x, f.y - 20, slamLabel, 'crit', '#ef4444');
           }
           try { if (soundEngine) soundEngine.playClash(); } catch(e) {}
         } else {

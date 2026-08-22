@@ -2,7 +2,7 @@
  * Fighter Entity - Ultra Clean & Crisp 3-Hero System
  * 1. 하나코 나나 (Nana) - Heavy Sniper Gunner (160 dmg shot / 16-burst ult)
  * 2. 텐코 시부키 (Shibuki) - Rapid Poke (30x2) & 8.0s Fast Berserker Fox
- * 3. 유즈하 리코 (Riko) - Stun & 220 Big Smash + 100 Wall-Slam Combo
+ * 3. 유즈하 리코 (Riko) - Ultra Dash Smash on Contact + 3-Bounce Wall Slam Combo
  */
 
 class Fighter {
@@ -46,10 +46,14 @@ class Fighter {
     this.ultMaxCd = config.ultCooldown || 10.5;
     this.ultTimer = 0;
 
-    // Stun & Wall Slam
+    // Stun & Multi-Bounce Wall Slam
     this.stunTimer = 0;
-    this.isWallSlamming = false;
+    this.wallBounceLeft = 0;
     this.wallSlamAttacker = null;
+
+    // Riko Ult Dash
+    this.isRikoUltDashing = false;
+    this.rikoUltDashTimer = 0;
 
     // Clash Damage Throttle
     this.clashCooldown = 0;
@@ -98,9 +102,11 @@ class Fighter {
     // ── Stun State Check ──
     if (this.stunTimer > 0) {
       this.stunTimer -= effDt;
-      this.vx *= 0.8;
-      this.vy *= 0.8;
-      return; // Stunned!
+      this.vx *= 0.85;
+      this.vy *= 0.85;
+      this.x += this.vx * speedMultiplier;
+      this.y += this.vy * speedMultiplier;
+      return; // Stunned
     }
 
     const nearestEnemy = this.findNearestEnemy(allFighters);
@@ -116,6 +122,14 @@ class Fighter {
     if (this.swordSlashTimer > 0) this.swordSlashTimer -= effDt;
     if (this.invulnerableTimer > 0) this.invulnerableTimer -= effDt;
     if (this.clashCooldown > 0) this.clashCooldown -= effDt;
+
+    // ── Riko Ult Dash Timeout ──
+    if (this.isRikoUltDashing) {
+      this.rikoUltDashTimer -= effDt;
+      if (this.rikoUltDashTimer <= 0) {
+        this.isRikoUltDashing = false;
+      }
+    }
 
     // ── 1. Nana Machine Gun Burst ──
     if (this.isMachineGunning) {
@@ -267,47 +281,57 @@ class Fighter {
       }
 
     } else if (this.id === 'riko') {
-      // ═══ Riko Stun & Colossal Smash + Wall Slam ═══
-      // 1. Stun all enemies for 1.2s
-      for (const target of allFighters) {
-        if (target === this || target.isDead) continue;
-        target.stunTimer = 1.2;
-        target.vx = 0;
-        target.vy = 0;
-        if (particleSystem) {
-          particleSystem.spawnDamageText(target.x, target.y - 35, '💫 STUN (기절)!', 'skill', '#ffd700');
-        }
-      }
-
-      // 2. Smash nearest enemy with 220 massive damage and send them flying into the wall!
+      // ═══ Riko Ultra Dash Trigger ═══
       if (enemy) {
-        this.swordSlashTimer = 0.5;
-        this.invulnerableTimer = 0.6;
+        this.isRikoUltDashing = true;
+        this.rikoUltDashTimer = 1.8; // Will dash toward enemy until contact
+        this.invulnerableTimer = 0.8;
 
-        // Teleport/Dash directly in front of enemy
         const angle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
-        this.x = enemy.x - Math.cos(angle) * 60;
-        this.y = enemy.y - Math.sin(angle) * 60;
-
-        // Big Hit: 220 DMG!
-        enemy.takeDamage(220, this, particleSystem, 'crit');
-
-        // Launch enemy into wall at high velocity
-        const slamSpeed = 30;
-        enemy.vx = Math.cos(angle) * slamSpeed;
-        enemy.vy = Math.sin(angle) * slamSpeed;
-        enemy.isWallSlamming = true;
-        enemy.wallSlamAttacker = this;
+        const dashSpeed = 24.0; // Rapid rocket rush!
+        this.vx = Math.cos(angle) * dashSpeed;
+        this.vy = Math.sin(angle) * dashSpeed;
 
         if (particleSystem) {
-          particleSystem.shake(12);
-          particleSystem.spawnSlash(enemy.x, enemy.y, angle + Math.PI / 4, '#10b981', 80);
-          particleSystem.spawnSlash(enemy.x, enemy.y, angle - Math.PI / 4, '#34d399', 80);
-          particleSystem.spawnSparks(enemy.x, enemy.y, '#10b981', 14, 5);
+          particleSystem.spawnDamageText(this.x, this.y - 25, '⚡ 초광속 돌진!', 'skill', '#10b981');
+          particleSystem.shake(6);
         }
-        try { if (soundEngine) soundEngine.playSlash(); } catch(e) {}
       }
     }
+  }
+
+  // ═══ Riko Contact Smash Trigger (Called when Riko dashes and touches enemy) ═══
+  applyRikoUltSmash(target, particleSystem, soundEngine) {
+    if (!this.isRikoUltDashing || !target || target.isDead) return;
+    this.isRikoUltDashing = false;
+
+    // 1. Stun target for 1.2s
+    target.stunTimer = 1.2;
+
+    // 2. Heavy 180 Strike DMG!
+    target.takeDamage(180, this, particleSystem, 'crit');
+
+    // 3. Super High-Speed Launch for 3-Bounce Wall Slam!
+    const hitAngle = Math.atan2(target.y - this.y, target.x - this.x);
+    const slamLaunchSpeed = 38.0; // Extreme speed throw!
+    target.vx = Math.cos(hitAngle) * slamLaunchSpeed;
+    target.vy = Math.sin(hitAngle) * slamLaunchSpeed;
+    target.wallBounceLeft = 3; // 3 Consecutive Wall Slams!
+    target.wallSlamAttacker = this;
+
+    // Ricochet Riko back slightly
+    this.vx = -Math.cos(hitAngle) * 5.0;
+    this.vy = -Math.sin(hitAngle) * 5.0;
+    this.swordSlashTimer = 0.4;
+
+    if (particleSystem) {
+      particleSystem.shake(15);
+      particleSystem.spawnSlash(target.x, target.y, hitAngle + Math.PI / 4, '#10b981', 90);
+      particleSystem.spawnSlash(target.x, target.y, hitAngle - Math.PI / 4, '#34d399', 90);
+      particleSystem.spawnSparks(target.x, target.y, '#10b981', 20, 6);
+      particleSystem.spawnDamageText(target.x, target.y - 30, '💥 핵 스매시 (180딜)!', 'crit', '#ffd700');
+    }
+    try { if (soundEngine) soundEngine.playSlash(); } catch(e) {}
   }
 
   applyFoxScratch(enemy, particleSystem) {
