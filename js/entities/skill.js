@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Skill Manager - Clean & Impactful Arcade Combat Engine
  * - Nana: Heavy Sniper Shot & Rapid Machine Gun
  * - Shibuki: Quick Horn Poke (2 horns) & Fox Berserk
@@ -118,10 +118,10 @@ class SkillManager {
       img: swordImg,
       state: 'falling',
       x: targetX,
-      y: targetY - 450, // Starts up above
+      y: targetY - 450,
       targetX: targetX,
       targetY: targetY,
-      vy: 38, // Swift drop
+      vy: 38,
       rotation: 0,
       impactDmg: 35,
       duration: 3.0,
@@ -297,7 +297,6 @@ class SkillManager {
       ctx.translate(sw.x, sw.y);
 
       if (sw.state === 'planted') {
-        // Clean sword rendered standing vertically in the center
         if (sw.img && sw.img.complete && sw.img.naturalWidth > 0) {
           const swW = 44;
           const swH = 150;
@@ -308,7 +307,6 @@ class SkillManager {
         }
 
       } else if (sw.state === 'falling') {
-        // Clean falling sword
         if (sw.img && sw.img.complete && sw.img.naturalWidth > 0) {
           const swW = 48;
           const swH = 160;
@@ -328,7 +326,6 @@ class SkillManager {
       ctx.translate(p.x, p.y);
 
       if (p.type === 'horn') {
-        // Rotating Shibuki Horn
         ctx.rotate(p.spin);
         if (p.img && p.img.complete && p.img.naturalWidth > 0) {
           const s = p.drawSize || 36;
@@ -341,7 +338,6 @@ class SkillManager {
         }
 
       } else if (p.type === 'heavy_bullet') {
-        // Nana Heavy Shot
         ctx.rotate(p.angle);
 
         ctx.fillStyle = '#ff69b4';
@@ -355,7 +351,6 @@ class SkillManager {
         ctx.fillText('💖', 0, 0);
 
       } else {
-        // Rapid Bullet
         ctx.rotate(p.angle);
         ctx.fillStyle = '#ff69b4';
         ctx.beginPath();
@@ -374,11 +369,9 @@ class SkillManager {
     // ── 3. Time Stop Clean Dark Filter ──
     if (this.isTimeStopped) {
       ctx.save();
-      // Clean, cool dark tint
       ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
       ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-      // Clean subtle clock face in center
       const cx = ctx.canvas.width / 2;
       const cy = ctx.canvas.height / 2;
       const r = Math.min(cx, cy) * 0.55;

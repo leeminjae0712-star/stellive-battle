@@ -1,7 +1,6 @@
-﻿/**
+/**
  * Particle & Visual Effects Engine - Ultra Clean & Crisp Arcade Edition
- * No ugly screen-covering glows, no weird donut rings, no fluorescent bars.
- * Clean, punchy, beautiful arcade effects.
+ * Safe, robust, error-free particle rendering with zero screen clutter.
  */
 
 class ParticleSystem {
@@ -23,7 +22,6 @@ class ParticleSystem {
     this.screenShake = Math.min(this.screenShake + amount, 14);
   }
 
-  // Crisp little sparks on hit
   spawnSparks(x, y, color = '#ffffff', count = 6, speed = 3) {
     if (this.particles.length > 80) return;
     for (let i = 0; i < count; i++) {
@@ -44,7 +42,6 @@ class ParticleSystem {
     }
   }
 
-  // Small clean trail dot
   spawnTrail(x, y, color = '#ff69b4', radius = 5) {
     if (this.particles.length > 80) return;
     this.particles.push({
@@ -61,7 +58,6 @@ class ParticleSystem {
     });
   }
 
-  // Clean, sharp sword slash cut
   spawnSlash(x, y, angle, color = '#10b981', length = 60) {
     if (this.slashes.length > 6) this.slashes.shift();
     this.slashes.push({
@@ -75,7 +71,6 @@ class ParticleSystem {
     });
   }
 
-  // Fox claw scratch marks
   spawnScratch(x, y, color = '#c084fc') {
     if (this.slashes.length > 6) this.slashes.shift();
     const angle = (Math.random() - 0.5) * 0.5;
@@ -90,6 +85,11 @@ class ParticleSystem {
         decay: 0.12
       });
     }
+  }
+
+  spawnShockwave(x, y, color = '#ffffff', maxRadius = 40, lineWidth = 2) {
+    // Safe placeholder to avoid any caller errors
+    this.spawnSparks(x, y, color, 4, 2);
   }
 
   spawnDamageNumber(x, y, amount, type = 'normal') {

@@ -1,8 +1,8 @@
-﻿/**
+/**
  * StelLive Characters Roster - Pro Balanced 3-Hero System
  * 1. 하나코 나나 (Hanako Nana) - Heavy Sniper Gunner
  * 2. 텐코 시부키 (Tenko Shibuki) - Rapid Poke & Fox Berserker (8.0s Fast Ult!)
- * 3. 유즈하 리코 (Yuzuha Riko) - Time Warden & COLOSSAL Holy Sword (Full Map Global Strike & Chrono Stop)
+ * 3. 유즈하 리코 (Yuzuha Riko) - Time Warden & Holy Sword (Map-Wide Strike & Chrono Stop)
  * Domain: hanakonana.cloud
  */
 

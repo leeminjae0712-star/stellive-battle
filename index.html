@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -26,7 +26,7 @@
       </div>
 
       <div class="header-controls">
-        <button id="btn-sound" class="icon-btn" title="사운드 온/오프">
+        <button id="btn-sound" class="icon-btn" title="사운드 켜기/끄기">
           <i data-lucide="volume-2"></i>
         </button>
         <button id="btn-fullscreen" class="icon-btn" title="전체화면">
@@ -37,12 +37,12 @@
 
     <!-- Matchup Mode Selector -->
     <div class="mode-selector-bar">
-      <span class="mode-label"><i data-lucide="swords"></i> 대전 모드:</span>
+      <span class="mode-label"><i data-lucide="swords"></i> 매치업 선택:</span>
       <div class="mode-btn-group">
         <button class="mode-btn" data-mode="nana-vs-shibuki">🌸 나나 vs 🦊 시부키</button>
         <button class="mode-btn" data-mode="nana-vs-riko">🌸 나나 vs ⚔️ 리코</button>
         <button class="mode-btn" data-mode="shibuki-vs-riko">🦊 시부키 vs ⚔️ 리코</button>
-        <button class="mode-btn active" data-mode="all-3-way">🔥 3인 대난투 (전원 참가)</button>
+        <button class="mode-btn active" data-mode="all-3-way">👑 3인 대난투 (전원 참전)</button>
       </div>
     </div>
 
@@ -53,7 +53,7 @@
 
     <!-- Main Workspace (Centered Giant Arena) -->
     <main class="main-layout-reels">
-      <!-- Center: Giant 820px Arena & Controls -->
+      <!-- Center: Giant Arena & Controls -->
       <section class="arena-section">
         <div class="canvas-wrapper" id="canvas-wrapper">
           <canvas id="battle-canvas"></canvas>
@@ -66,8 +66,8 @@
               </div>
               <div class="cutin-text-group">
                 <span class="cutin-sub" id="cutin-fighter-name">하나코 나나</span>
-                <h2 class="cutin-title" id="cutin-skill-name">사랑이 난사!</h2>
-                <p class="cutin-desc" id="cutin-skill-desc">기관총처럼 16연발 탄환을 [뚜루루룰루~] 쏟아붓습니다!</p>
+                <h2 class="cutin-title" id="cutin-skill-name">궁극기 발동!</h2>
+                <p class="cutin-desc" id="cutin-skill-desc">스킬 설명</p>
               </div>
             </div>
           </div>
@@ -81,7 +81,7 @@
               <h2 id="winner-name" class="winner-name">유즈하 리코 승리!</h2>
               <div class="winner-actions">
                 <button id="btn-rematch" class="btn btn-primary btn-lg">
-                  <i data-lucide="rotate-ccw"></i> 다시 시작
+                  <i data-lucide="rotate-ccw"></i> 다시 대결
                 </button>
               </div>
             </div>

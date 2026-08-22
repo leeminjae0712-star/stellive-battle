@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Main Game Controller - StelLive 3-Hero Battle Edition
  * Supports Nana, Shibuki, and Riko across 1v1 and 3-Way FFA.
  */
@@ -19,7 +19,7 @@ class GameApp {
 
     // Game State
     this.allCharacterData = STELLIVE_CHARACTERS;
-    this.currentMode = 'all-3-way'; // 'nana-vs-shibuki' | 'nana-vs-riko' | 'shibuki-vs-riko' | 'all-3-way'
+    this.currentMode = 'all-3-way';
     this.fighters = [];
     this.isPlaying = false;
     this.isPaused = false;
@@ -176,25 +176,30 @@ class GameApp {
             </div>
             <div class="vs-name-box">
               <span class="vs-fighter-name">${f.name}</span>
-              <span class="vs-hp-text" id="hud-hp-${f.id}">${f.hp} / ${f.maxHp} HP</span>
+              <span class="vs-fighter-role">${f.role}</span>
             </div>
           </div>
 
-          <div class="vs-bar-wrap">
-            <div class="vs-bar-bg">
-              <div class="vs-bar-fill hp-fill ${hpFillClass}" id="hud-hp-bar-${f.id}" style="width: 100%;"></div>
+          <!-- HP Section -->
+          <div class="hud-hp-wrap">
+            <div class="hud-hp-label-row">
+              <div class="hud-hearts" id="hud-hearts-${f.id}">❤️❤️❤️❤️❤️</div>
+              <span class="hud-hp-val" id="hud-hp-${f.id}">${f.hp} / ${f.maxHp} HP</span>
             </div>
-            <div class="vs-hearts-row" id="hud-hearts-${f.id}">❤️❤️❤️❤️❤️</div>
+            <div class="hud-hp-bar-bg">
+              <div class="hud-hp-bar-fill ${hpFillClass}" id="hud-hp-bar-${f.id}" style="width: 100%;"></div>
+            </div>
           </div>
 
-          <div class="vs-cooldowns-grid">
+          <!-- Cooldowns Section -->
+          <div class="hud-cd-wrap">
             <div class="cd-row">
               <div class="cd-label-row">
                 <span class="cd-name">${f.emoji} ${f.skill1Name}</span>
-                <span class="cd-status" id="hud-s1-status-${f.id}">READY!</span>
+                <span class="cd-status ready" id="hud-s1-status-${f.id}">⚡ READY</span>
               </div>
               <div class="cd-bar-bg">
-                <div class="cd-bar-fill s1-fill ${s1FillClass}" id="hud-s1-bar-${f.id}" style="width: 0%;"></div>
+                <div class="cd-bar-fill ${s1FillClass}" id="hud-s1-bar-${f.id}" style="width: 100%;"></div>
               </div>
             </div>
 
@@ -290,7 +295,7 @@ class GameApp {
       if (s1Bar) s1Bar.style.width = `${s1Percent}%`;
       if (s1Status) {
         if (s1Percent >= 100) {
-          s1Status.textContent = '✨ READY!';
+          s1Status.textContent = '⚡ READY!';
           s1Status.className = 'cd-status ready';
         } else {
           const rem = Math.max(0, f.skill1MaxCd - f.skill1Timer);
@@ -305,7 +310,7 @@ class GameApp {
       if (ultBar) ultBar.style.width = `${ultPercent}%`;
       if (ultStatus) {
         if (ultPercent >= 100) {
-          ultStatus.textContent = '⚡ READY!';
+          ultStatus.textContent = '★ READY!';
           ultStatus.className = 'cd-status ready-gold';
         } else {
           ultStatus.textContent = `${ultPercent}%`;

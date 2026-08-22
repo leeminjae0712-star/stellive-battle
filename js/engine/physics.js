@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Physics Engine - Clean, Smooth & Clutter-Free
  * - Body clash damage is strictly throttled (once per 0.45s)
  * - Safe unstick separation
@@ -86,7 +86,7 @@ class PhysicsEngine {
           if (f1.isFoxTransformed && !f1Frozen) f1.applyFoxScratch(f2, particleSystem);
           if (f2.isFoxTransformed && !f2Frozen) f2.applyFoxScratch(f1, particleSystem);
 
-          // Throttled Clash Damage (Once per 0.45s to avoid screen number flood!)
+          // Throttled Clash Damage
           if (f1.clashCooldown <= 0 && f2.clashCooldown <= 0) {
             f1.clashCooldown = 0.45;
             f2.clashCooldown = 0.45;
@@ -98,7 +98,6 @@ class PhysicsEngine {
             if (particleSystem) {
               const mx = (f1.x + f2.x) / 2, my = (f1.y + f2.y) / 2;
               particleSystem.spawnSparks(mx, my, '#ffffff', 4, 2);
-              particleSystem.spawnShockwave(mx, my, '#ffd700', 18, 2);
             }
             try { if (soundEngine) soundEngine.playClash(); } catch(e) {}
           }

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Fighter Entity - Ultra Clean & Crisp 3-Hero System
  * 1. 하나코 나나 (Nana) - Heavy Sniper Gunner (160 dmg shot / 16-burst ult)
  * 2. 텐코 시부키 (Shibuki) - Rapid Poke (30x2) & 8.0s Fast Berserker Fox
@@ -91,7 +91,7 @@ class Fighter {
     // ── Time Stop Freeze Check ──
     const isFrozenInTime = skillManager && skillManager.isTimeStopped && skillManager.timeStopOwner !== this;
     if (isFrozenInTime) {
-      return; // Frozen in time
+      return;
     }
 
     const effDt = dt * speedMultiplier;
