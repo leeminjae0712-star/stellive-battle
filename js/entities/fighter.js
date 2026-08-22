@@ -1,6 +1,6 @@
 ﻿/**
  * Fighter Entity Class
- * Fast Ult charging & balanced long fight action.
+ * 3000+ HP Pool + Restored Big Damage Numbers + 6.5s Fast Ults.
  */
 
 class Fighter {
@@ -28,11 +28,11 @@ class Fighter {
     this.vx = Math.cos(initialAngle) * this.baseSpeed;
     this.vy = Math.sin(initialAngle) * this.baseSpeed;
 
-    // Combat Stats (High health pool for extended battle)
-    this.maxHp = config.hp || 1000;
+    // Combat Stats (3000+ HP Pool)
+    this.maxHp = config.hp || 3000;
     this.hp = this.maxHp;
-    this.atk = config.atk || 36;
-    this.def = config.def || 14;
+    this.atk = config.atk || 58;
+    this.def = config.def || 16;
     this.team = team;
     this.isDead = false;
 
@@ -44,7 +44,7 @@ class Fighter {
 
     this.ultName = config.ultName || '궁극기';
     this.ultDesc = config.ultDesc || '';
-    this.ultMaxCd = config.ultCooldown || 6.5; // Short exciting Ult cooldown!
+    this.ultMaxCd = config.ultCooldown || 6.5;
     this.ultTimer = Math.random() * 2.0;
 
     // Nana Machine Gun ("사랑이 난사")
@@ -275,30 +275,29 @@ class Fighter {
     }
   }
 
-  // Balanced Nerfed Fox Scratch Damage
   applyFoxScratch(enemy, particleSystem) {
     if (!this.isFoxTransformed || this.scratchCooldown > 0 || !enemy || enemy.isDead) return;
 
     this.scratchCooldown = 0.25;
-    const dmg = 16; // Balanced nerfed scratch damage
+    const dmg = 48; // Punchy scratch damage
     enemy.takeDamage(dmg, this, particleSystem, 'crit');
 
     if (particleSystem) {
       particleSystem.spawnScratch(enemy.x, enemy.y, '#c084fc');
       particleSystem.spawnDamageText(enemy.x, enemy.y, '할큄!', 'crit', '#f43f5e');
-      particleSystem.shake(3);
+      particleSystem.shake(4);
     }
   }
 
   takeDamage(amount, attacker, particleSystem, type = 'normal') {
     if (this.isDead || this.invulnerableTimer > 0) return 0;
 
-    const finalDamage = Math.max(3, Math.floor(amount - this.def * 0.2));
+    const finalDamage = Math.max(5, Math.floor(amount - this.def * 0.2));
     this.hp -= finalDamage;
 
     if (particleSystem) {
       particleSystem.spawnDamageNumber(this.x, this.y, finalDamage, type);
-      particleSystem.spawnSparks(this.x, this.y, this.color, type === 'crit' ? 6 : 3);
+      particleSystem.spawnSparks(this.x, this.y, this.color, type === 'crit' ? 8 : 4);
     }
 
     if (this.hp <= 0) {

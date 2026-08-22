@@ -1,6 +1,6 @@
 ﻿/**
  * Skill Manager & Projectile Engine
- * Lower damage for extended dramatic battle, fast recharge.
+ * Powerful big damage numbers + punchy feedback.
  */
 
 class SkillManager {
@@ -14,7 +14,7 @@ class SkillManager {
     this.aoeEffects = [];
   }
 
-  // 1. Nana Normal Skill: [사랑이 사격]
+  // 1. Nana Normal Skill: [사랑이 사격] (120 Damage)
   spawnHeavyBullet(fighter, startX, startY, angle, particleSystem) {
     const speed = 10.5;
     this.projectiles.push({
@@ -26,8 +26,8 @@ class SkillManager {
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       radius: 14,
-      drawSize: 34,
-      damage: 45, // Balanced nerfed damage
+      drawSize: 36,
+      damage: 120, // Punchy big damage
       color: '#ff69b4',
       glowColor: '#f43f5e',
       life: 2.5,
@@ -42,7 +42,7 @@ class SkillManager {
     }
   }
 
-  // 2. Nana Ultimate: [사랑이 난사]
+  // 2. Nana Ultimate: [사랑이 난사] (32 Damage x 16)
   spawnRapidBullet(fighter, startX, startY, angle, particleSystem) {
     const speed = 12.0;
     this.projectiles.push({
@@ -55,7 +55,7 @@ class SkillManager {
       vy: Math.sin(angle) * speed,
       radius: 8,
       drawSize: 18,
-      damage: 12, // Balanced nerfed rapid damage
+      damage: 32, // Punchy rapid damage
       color: '#ff69b4',
       glowColor: '#ffd700',
       life: 2.0,
@@ -69,7 +69,7 @@ class SkillManager {
     }
   }
 
-  // 3. Shibuki Normal Skill: [뿔 발사]
+  // 3. Shibuki Normal Skill: [뿔 발사] (60 Damage x 2)
   spawnShibukiHorn(fighter, target, hornImg, particleSystem, hornIndex = 1) {
     const angle = Math.atan2(target.y - fighter.y, target.x - fighter.x) + (Math.random() - 0.5) * 0.15;
     const speed = 9.5;
@@ -86,7 +86,7 @@ class SkillManager {
       vy: Math.sin(angle) * speed,
       radius: 16,
       drawSize: 38,
-      damage: 22, // Balanced nerfed poke damage (22 x 2 = 44)
+      damage: 60, // Punchy horn damage
       color: '#c084fc',
       glowColor: '#a855f7',
       life: 3.0,
