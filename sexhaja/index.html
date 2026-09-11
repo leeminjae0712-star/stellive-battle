@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>효종의 포터 드라이브 🚛</title>
-    <meta name="description" content="효종이 포터 트럭을 운전하며 짐을 배달하는 짜릿한 레이싱 게임!">
+    <title>효종의 포터 드라이브 🚛 - 빌리지 고가의 질주</title>
+    <meta name="description" content="효종이 포터 트럭으로 카트라이더 명작 트랙 [빌리지 고가의 질주]를 질주한다! 드리프트와 부스터 완벽 탑재!">
     <base href="/sexhaja/">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
@@ -17,21 +17,24 @@
         <!-- Start Screen -->
         <div id="start-screen" class="overlay">
             <div class="start-content">
-                <div class="title-badge">전국 총알배송 🚀</div>
+                <div class="track-badge">🏁 카트라이더 명작 맵 : 빌리지 고가의 질주 🏁</div>
                 <div class="title-glow">
                     <h1>효종의<br><span>포터 드라이브</span></h1>
                 </div>
                 <div class="truck-avatar-container">
-                    <div class="truck-emoji">🚛</div>
-                    <div class="hyojong-badge">👨‍✈️ 효종 기사님</div>
+                    <div class="truck-emoji">🚛💨</div>
+                    <div class="hyojong-badge">👨‍✈️ 효종 기사님의 전설적인 드리프트</div>
                 </div>
-                <p class="subtitle">택배 짐을 가득 싣고 고속도로를 질주하세요!<br>장애물을 피하고 📦 상자를 모아 최고 기록을 세우세요!</p>
+                <p class="subtitle">
+                    시계탑을 지나 고가도로로 상승! 점프대와 헤어핀 급커브를 정복하라!<br>
+                    <strong>Shift 키로 드리프트</strong>하여 게이지를 채우고, <strong>🚀 부스터</strong>로 역주행하세요!
+                </p>
                 <div class="controls-info">
                     <div class="key-group">
                         <div class="keys-row">
                             <span class="key">←</span><span class="key">→</span>
                         </div>
-                        <span class="key-label">좌우 차선 이동</span>
+                        <span class="key-label">핸들 조향</span>
                     </div>
                     <div class="key-group">
                         <div class="keys-row">
@@ -39,14 +42,33 @@
                         </div>
                         <span class="key-label">가속 / 브레이크</span>
                     </div>
+                    <div class="key-group">
+                        <div class="keys-row">
+                            <span class="key wide-key">Shift</span>
+                        </div>
+                        <span class="key-label">💨 드리프트 (순부!)</span>
+                    </div>
+                    <div class="key-group">
+                        <div class="keys-row">
+                            <span class="key wide-key">Ctrl / Space</span>
+                        </div>
+                        <span class="key-label">🚀 부스터 ON</span>
+                    </div>
                 </div>
-                <button id="start-btn" class="game-btn pulse">🚛 배달 출발! (Enter) 🚛</button>
+                <button id="start-btn" class="game-btn pulse">🏁 배달 레이스 출발! (Enter) 🏁</button>
             </div>
         </div>
 
         <!-- HUD -->
         <div id="hud" class="hidden">
             <div class="hud-top-left">
+                <div class="hud-chip lap-chip">
+                    <span class="hud-icon">🏁</span>
+                    <div class="chip-text">
+                        <span class="chip-label">TRACK LAP</span>
+                        <span id="lap-display" class="chip-value">LAP 1/2</span>
+                    </div>
+                </div>
                 <div class="hud-chip score-chip">
                     <span class="hud-icon">📦</span>
                     <div class="chip-text">
@@ -71,6 +93,21 @@
                         <div id="speed-bar" class="speed-bar-fill"></div>
                     </div>
                 </div>
+
+                <!-- Booster Gauge Container -->
+                <div class="booster-gauge-container">
+                    <div class="booster-gauge-label">
+                        <span>⚡ N2O DRIFT GAUGE</span>
+                        <span id="booster-count-text">부스터 0개</span>
+                    </div>
+                    <div class="booster-gauge-bg">
+                        <div id="booster-gauge-fill" class="booster-gauge-fill"></div>
+                    </div>
+                    <div id="booster-slots" class="booster-slots">
+                        <span id="booster-slot-1" class="booster-slot">🚀</span>
+                        <span id="booster-slot-2" class="booster-slot">🚀</span>
+                    </div>
+                </div>
             </div>
 
             <div class="hud-top-right">
@@ -93,34 +130,36 @@
             <div class="touch-left-zone">
                 <button id="touch-left" class="touch-btn">◀</button>
                 <button id="touch-right" class="touch-btn">▶</button>
+                <button id="touch-drift" class="touch-btn action-touch-btn drift-touch-btn">💨 드리프트</button>
             </div>
             <div class="touch-right-zone">
+                <button id="touch-booster" class="touch-btn action-touch-btn booster-touch-btn">🚀 부스터</button>
                 <button id="touch-brake" class="touch-btn pedal-btn brake-pedal">브레이크</button>
-                <button id="touch-gas" class="touch-btn pedal-btn gas-pedal">엑셀 🚀</button>
+                <button id="touch-gas" class="touch-btn pedal-btn gas-pedal">엑셀 🚗</button>
             </div>
         </div>
 
         <!-- Game Over Screen -->
         <div id="gameover-screen" class="overlay hidden">
             <div class="gameover-content">
-                <div class="gameover-badge">배달 종료</div>
-                <h2>💥 사고 발생!</h2>
-                <p class="gameover-desc">트럭이 파손되어 정비소로 입고되었습니다.</p>
+                <div id="finish-badge" class="gameover-badge">배달 완주!</div>
+                <h2 id="finish-title">🏆 GOAL IN!</h2>
+                <p id="finish-desc" class="gameover-desc">빌리지 고가의 질주를 성공적으로 완주했습니다!</p>
                 <div class="final-stats">
+                    <div class="stat-row">
+                        <span class="stat-label">⏱️ 완주 랩타임</span>
+                        <span id="final-time" class="stat-value">01:45.20</span>
+                    </div>
                     <div class="stat-row">
                         <span class="stat-label">📦 최종 배달 점수</span>
                         <span id="final-score" class="stat-value">0</span>
                     </div>
-                    <div class="stat-row">
-                        <span class="stat-label">🛣️ 주행 거리</span>
-                        <span id="final-distance" class="stat-value">0m</span>
-                    </div>
                     <div class="stat-row highlight">
-                        <span class="stat-label">🏆 역대 최고 기록</span>
+                        <span class="stat-label">🏆 최고 기록</span>
                         <span id="high-score" class="stat-value">0</span>
                     </div>
                 </div>
-                <button id="restart-btn" class="game-btn pulse">🔄 포터 수리 완료! 다시 출발 (Enter)</button>
+                <button id="restart-btn" class="game-btn pulse">🏁 다시 달리기 (Enter)</button>
             </div>
         </div>
 
