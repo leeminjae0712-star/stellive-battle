@@ -1,5 +1,7 @@
 {
   "rewrites": [
-    { "source": "/sexhaja", "destination": "/sexhaja/index.html" }
+    { "source": "/sexhaja", "destination": "/sexhaja/index.html" },
+    { "source": "/chat", "destination": "/chat/index.html" },
+    { "source": "/chat/(.*)", "destination": "/chat/index.html" }
   ]
 }

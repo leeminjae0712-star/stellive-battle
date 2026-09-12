@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>GhostChat - hanakonana.cloud/chat</title>
+  <meta name="description" content="GhostChat - 시크릿 웹 메신저">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0a0d14;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    #chat-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <iframe id="chat-frame" src="" allow="clipboard-read; clipboard-write; camera; microphone"></iframe>
+
+  <script>
+    (function () {
+      const TUNNEL_BASE = 'https://medical-packed-consistent-eds.trycloudflare.com/chat';
+      const search = window.location.search || '';
+      const targetUrl = search ? `${TUNNEL_BASE}${search}` : TUNNEL_BASE;
+      document.getElementById('chat-frame').src = targetUrl;
+    })();
+  </script>
+</body>
+</html>
